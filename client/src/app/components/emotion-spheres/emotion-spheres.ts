@@ -249,6 +249,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.orbitControls = new OrbitControls(this.camera, this.containerRef.nativeElement);
     this.orbitControls.enableDamping = true;
     this.orbitControls.dampingFactor = 0.05;
+    this.orbitControls.minDistance = 100;
+    this.orbitControls.maxDistance = 12000;
     
     // Stop camera animation if user starts dragging
     this.orbitControls.addEventListener('start', () => {
@@ -299,7 +301,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       
       const finalSize = selectedSphere.userData['currentSize'] || 350;
       
-      const direction = new THREE.Vector3().subVectors(this.camera.position, selectedSphere.position).normalize();
+      const worldPos = new THREE.Vector3();
+      selectedSphere.getWorldPosition(worldPos);
+      
+      const direction = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize();
       
       const isMobile = window.innerWidth <= 768;
       const right = new THREE.Vector3().crossVectors(this.camera.up, direction).normalize();
@@ -317,11 +322,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         zoomDistance = finalSize * 4.5;
       }
       
-      this.targetOrbitCenter.copy(selectedSphere.position)
+      this.targetOrbitCenter.copy(worldPos)
         .add(right.clone().multiplyScalar(rightOffsetAmount))
         .add(up.clone().multiplyScalar(upOffsetAmount));
         
-      this.targetCameraPos.copy(selectedSphere.position)
+      this.targetCameraPos.copy(worldPos)
         .add(direction.multiplyScalar(zoomDistance))
         .add(right.clone().multiplyScalar(rightOffsetAmount))
         .add(up.clone().multiplyScalar(upOffsetAmount));
@@ -461,60 +466,80 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   }
 
   private renderSpheres(emotionsData: EmotionData[]): void {
+    emotionsData.forEach(emotion => {
+      this.createAndAddSphere(emotion, emotionsData);
+    });
+  }
+
+  private createAndAddSphere(emotion: EmotionData, allEmotions: EmotionData[] = []): { sphere: THREE.Mesh, textGroup: THREE.Group } {
     const radius = 1000;
     const maxSize = 2000;
     const initialSize = maxSize;
+    
+    const color = this.emotionColors[emotion.emotion] || 'gray';
+    const density = this.calculateDensity(emotion, allEmotions.length ? allEmotions : [emotion], 6000);
+    
+    const geometry = new THREE.SphereGeometry(initialSize, 32, 32);
+    const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
+    const sphere = new THREE.Mesh(geometry, material);
 
-    emotionsData.forEach(emotion => {
-      const color = this.emotionColors[emotion.emotion] || 'gray';
-      const density = this.calculateDensity(emotion, emotionsData, 6000);
-      
-      const geometry = new THREE.SphereGeometry(initialSize, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
-      const sphere = new THREE.Mesh(geometry, material);
+    const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
+    const longitudeInRadians = THREE.MathUtils.degToRad(emotion.longitude);
 
-      const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
-      const longitudeInRadians = THREE.MathUtils.degToRad(emotion.longitude);
+    const x = radius * Math.cos(latitudeInRadians) * Math.sin(longitudeInRadians);
+    const y = radius * Math.sin(latitudeInRadians);
+    const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians);
 
-      const x = radius * Math.cos(latitudeInRadians) * Math.sin(longitudeInRadians);
-      const y = radius * Math.sin(latitudeInRadians);
-      const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians);
+    sphere.position.set(x, y, z);
+    
+    sphere.userData = {
+      animationParams: {
+        speed: Math.random() * 0.005 + 0.001,
+        amplitudeX: Math.random() * 50 + 10,
+        amplitudeY: Math.random() * 50 + 10,
+        amplitudeZ: Math.random() * 50 + 10,
+        offsetX: Math.random() * Math.PI * 2,
+        offsetY: Math.random() * Math.PI * 2,
+        offsetZ: Math.random() * Math.PI * 2,
+      },
+      originalPosition: { x, y, z },
+      creationTime: emotion.local_time,
+      density,
+      emotion: emotion
+    };
 
-      sphere.position.set(x, y, z);
-      
-      sphere.userData = {
-        animationParams: {
-          speed: Math.random() * 0.005 + 0.001,
-          amplitudeX: Math.random() * 50 + 10,
-          amplitudeY: Math.random() * 50 + 10,
-          amplitudeZ: Math.random() * 50 + 10,
-          offsetX: Math.random() * Math.PI * 2,
-          offsetY: Math.random() * Math.PI * 2,
-          offsetZ: Math.random() * Math.PI * 2,
-        },
-        originalPosition: { x, y, z },
-        creationTime: emotion.local_time,
-        density,
-        emotion: emotion
-      };
+    this.scene.add(sphere);
+    this.spheres.push(sphere);
 
-      this.scene.add(sphere);
-      this.spheres.push(sphere);
-
-      let textGroup: THREE.Group;
-      if (emotion.text_input && emotion.text_input.trim().length > 0) {
-        textGroup = this.createTextGroup(this.font, emotion.text_input, maxSize);
-      } else {
-        textGroup = new THREE.Group();
-      }
-      
-      textGroup.userData = { sphere, rotationSpeed: -0.01, originalScale: 1.0, emotionId: emotion._id };
-      textGroup.position.copy(sphere.position);
-      textGroup.visible = this.showText;
-      this.scene.add(textGroup);
-      this.textGroups.push(textGroup);
-    });
+    let textGroup: THREE.Group;
+    if (emotion.text_input && emotion.text_input.trim().length > 0) {
+      textGroup = this.createTextGroup(this.font, emotion.text_input, maxSize);
+    } else {
+      textGroup = new THREE.Group();
+    }
+    
+    textGroup.userData = { sphere, rotationSpeed: -0.01, originalScale: 1.0, emotionId: emotion._id };
+    textGroup.position.copy(sphere.position);
+    textGroup.visible = this.showText;
+    this.scene.add(textGroup);
+    this.textGroups.push(textGroup);
+    
+    return { sphere, textGroup };
   }
+
+  public addSpawnedSphere(emotion: EmotionData): void {
+    const { sphere } = this.createAndAddSphere(emotion, []);
+    
+    // Position it in front of the camera, shifted down slightly to match the DOM animation drop point
+    const spawnPos = this.camera.position.clone().add(new THREE.Vector3(0, -300, -800));
+    this.scene.worldToLocal(spawnPos);
+    
+    sphere.position.copy(spawnPos);
+    sphere.userData['velocity'] = new THREE.Vector3(0, 0, 0);
+    sphere.userData['isSpawning'] = true;
+  }
+
+
 
   private calculateTargetLayout(textGroup: THREE.Group, sphereRadius: number) {
     const isMobile = window.innerWidth <= 768;
@@ -682,11 +707,21 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private animate = (): void => {
     this.animationFrameId = requestAnimationFrame(this.animate);
     
+    // Slowly rotate the entire scene horizontally, but pause if inspecting an emotion
+    if (!this.selectedEmotion) {
+      this.scene.rotation.y += 0.0015;
+    }
+
     let time = Date.now() * 0.025;
     const minSize = 400;
     const maxSize = 2000;
 
-    const globeRadius = 1000;
+    // Scale globe radius based on camera zoom so spheres spread out
+    const cameraDist = this.camera.position.length();
+    // Cap the scale factor so it doesn't grow infinitely
+    const scaleFactor = Math.min(2.5, Math.max(1, cameraDist / 3500));
+    // Base camera distance is ~4000, base radius is 1000
+    const globeRadius = 1000 * scaleFactor;
 
     // Physics Step: Calculate repulsive forces
     for (let i = 0; i < this.spheres.length; i++) {
@@ -715,6 +750,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       // Collision Repulsion
       for (let j = i + 1; j < this.spheres.length; j++) {
         const s2 = this.spheres[j];
+        
+        if (s1.userData['isSpawning'] || s2.userData['isSpawning']) continue;
+        
         const isSelected2 = this.selectedEmotion && s2.userData['emotion']?._id === this.selectedEmotion.emotion._id;
         if (isSelected2) continue;
         
@@ -733,8 +771,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         
         const size1 = s1.userData['currentSize'] || 500;
         const size2 = s2.userData['currentSize'] || 500;
-        // Collision threshold: sum of radii (scaled for text breathing room)
-        const minSpace = (size1 + size2) * 1.5; 
+        // Collision threshold: sum of radii (scaled for text breathing room and zoom scaleFactor)
+        const minSpace = (size1 + size2) * 1.5 * scaleFactor; 
         const minSpaceSq = minSpace * minSpace;
         
         if (distSq > 0 && distSq < minSpaceSq) {
@@ -756,7 +794,20 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       if (!isSelected && sphere.userData['velocity']) {
         sphere.userData['velocity'].multiplyScalar(0.85); // Damping
         sphere.position.add(sphere.userData['velocity']);
-        sphere.position.normalize().multiplyScalar(globeRadius); // Snap to surface
+        
+        if (sphere.userData['isSpawning']) {
+          // Spring towards original surface position
+          const target = sphere.userData['originalPosition'];
+          const targetVec = new THREE.Vector3(target.x, target.y, target.z);
+          const spring = new THREE.Vector3().subVectors(targetVec, sphere.position).multiplyScalar(0.02);
+          sphere.position.add(spring);
+          
+          if (sphere.position.distanceToSquared(targetVec) < 10000) {
+            sphere.userData['isSpawning'] = false;
+          }
+        } else {
+          sphere.position.normalize().multiplyScalar(globeRadius); // Snap to surface
+        }
       }
       
       sphere.rotation.x += 0.01;

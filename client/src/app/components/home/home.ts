@@ -1,8 +1,9 @@
-import { Component, ViewChild, ElementRef, HostListener, inject } from '@angular/core';
+import { Component, ViewChild, ElementRef, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EmotionSpheresComponent } from '../emotion-spheres/emotion-spheres';
 import { EmotionFormComponent } from '../emotion-form/emotion-form';
 import { AuthService } from '../../services/auth';
+import { EmotionData } from '../../services/emotion';
 
 @Component({
   selector: 'app-home',
@@ -16,12 +17,35 @@ export class HomeComponent {
   @ViewChild('fabContainer') fabContainer!: ElementRef;
   showText = true;
   isFormVisible = false;
+  isSuccessToastVisible = false;
   isZoomed = false;
   viewMode: 'world' | 'me' = 'world';
   authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   onEmotionSelected(isZoomed: boolean) {
     this.isZoomed = isZoomed;
+  }
+
+  onEmotionLogStarted() {
+    this.isSuccessToastVisible = true;
+  }
+
+  onEmotionLogged(emotion: EmotionData) {
+    // Allow the 3D physics sphere to spawn immediately, but delay removing the DOM form for 600ms so it can fade out visually.
+    setTimeout(() => {
+      this.isFormVisible = false;
+      this.cdr.detectChanges();
+    }, 600);
+    
+    // Hide toast after a few seconds
+    setTimeout(() => {
+      this.isSuccessToastVisible = false;
+      this.cdr.detectChanges();
+    }, 4000);
+    if (this.spheresComponent) {
+      this.spheresComponent.addSpawnedSphere(emotion);
+    }
   }
 
   toggleText() {

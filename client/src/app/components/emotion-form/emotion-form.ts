@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, Output, EventEmitter, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
@@ -12,12 +12,16 @@ import { CommonModule } from '@angular/common';
   templateUrl: './emotion-form.html',
   styleUrls: ['./emotion-form.css']
 })
-export class EmotionFormComponent {
+export class EmotionFormComponent implements OnInit {
+  @Output() emotionLogged = new EventEmitter<EmotionData>();
+  @Output() emotionLogStarted = new EventEmitter<void>();
+  @ViewChild('formElement') formElement!: ElementRef;
   emotionForm: FormGroup;
   isSubmitting = false;
   private fb = inject(FormBuilder);
   private emotionService = inject(EmotionService);
   private locationService = inject(LocationService);
+  private cdr = inject(ChangeDetectorRef);
   authService = inject(AuthService);
 
   emotions = ['Anger', 'Contempt', 'Disgust', 'Envy', 'Guilt', 'Shame', 'Fear', 'Sadness', 'Surprise', 'Interest', 'Hope', 'Relief', 'Satisfaction', 'Joy', 'Elation', 'Pride'];
@@ -41,6 +45,7 @@ export class EmotionFormComponent {
   get selectedColor() { return this.selectedEmotion ? this.emotionColors[this.selectedEmotion] : ''; }
 
   successMessage = '';
+  morphState: 'idle' | 'morphing' | 'floating' = 'idle';
   randomDelay = '0s';
 
   constructor() {
@@ -71,15 +76,53 @@ export class EmotionFormComponent {
         text_input: this.emotionForm.value.reason // map reason to text_input for backend
       };
       
+      // Freeze the form's dimensions so CSS can smoothly animate them down
+      if (this.formElement) {
+        const rect = this.formElement.nativeElement.getBoundingClientRect();
+        this.formElement.nativeElement.style.setProperty('--start-width', `${rect.width}px`);
+        this.formElement.nativeElement.style.setProperty('--start-height', `${rect.height}px`);
+      }
+      
       this.emotionService.logEmotion(formData).subscribe({
         next: (res) => {
+          const spawnedEmotion: EmotionData = {
+            ...formData,
+            local_time: new Date().toISOString(),
+            _id: Math.random().toString(36).substr(2, 9)
+          };
+          
           this.isSubmitting = false;
-          this.emotionForm.reset();
-          this.successMessage = 'Emotion Logged Successfully';
+          this.successMessage = 'Logged Successfully!';
+          
+          // Force angular to apply the 'morphing' class IMMEDIATELY
+          this.morphState = 'morphing';
+          if (this.cdr) this.cdr.detectChanges();
+          
+          // 1. Wait 600ms for the CSS transition to circle to complete
           setTimeout(() => {
-            this.successMessage = '';
-            window.location.reload(); 
-          }, 1500);
+            // 2. Hold the perfect circle shape for 2 seconds
+            setTimeout(() => {
+              this.morphState = 'floating';
+              this.emotionLogStarted.emit();
+              
+              // Spawn the 3D sphere IMMEDIATELY as the DOM element starts to fade out
+              this.emotionLogged.emit(spawnedEmotion);
+              
+              if (this.cdr) this.cdr.detectChanges();
+               
+              // 3. Wait 600ms for it to fade out before resetting
+              setTimeout(() => {
+                this.emotionForm.reset();
+                this.morphState = 'idle';
+                this.successMessage = '';
+                if (this.formElement) {
+                  this.formElement.nativeElement.style.removeProperty('--start-width');
+                  this.formElement.nativeElement.style.removeProperty('--start-height');
+                }
+                if (this.cdr) this.cdr.detectChanges();
+              }, 600);
+            }, 2000);
+          }, 600);
         },
         error: (err) => {
           console.error('Submission failed', err);

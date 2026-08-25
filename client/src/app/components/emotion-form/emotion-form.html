@@ -1,38 +1,36 @@
-<form [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'">
-  
-  <ng-container *ngIf="!successMessage">
-    <div class="emoji-preview">
+<div class="emotion-form-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center;">
+  <form #formElement [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [ngClass]="morphState" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'">
+    
+    <div class="emoji-preview" [class.morph-emoji]="morphState !== 'idle'">
       {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '😶' }}
     </div>
 
-    <div class="form-group">
-      <select formControlName="emotion">
-        <option value="" disabled>Select an emotion...</option>
-        <option *ngFor="let emotion of emotions" [value]="emotion">{{ emotionEmojis[emotion] }} {{ emotion }}</option>
-      </select>
+    <div class="form-contents" [class.fade-out]="morphState !== 'idle'">
+      <div class="form-group">
+        <select formControlName="emotion">
+          <option value="" disabled>Select an emotion...</option>
+          <option *ngFor="let emotion of emotions" [value]="emotion">{{ emotionEmojis[emotion] }} {{ emotion }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <input type="text" formControlName="reason" placeholder="Why are you feeling this way?">
+      </div>
+
+      <div class="form-group toggle-group" *ngIf="authService.isLoggedIn$ | async">
+        <label class="toggle-label">
+          <input type="checkbox" formControlName="isPublic" style="display: none;">
+          <div class="toggle-track" [class.private]="!emotionForm.get('isPublic')?.value">
+            <div class="toggle-thumb"></div>
+            <span class="toggle-text public-text">Public</span>
+            <span class="toggle-text private-text">Private</span>
+          </div>
+        </label>
+      </div>
+
+      <button type="submit" [disabled]="emotionForm.invalid || isSubmitting" [class.tinted]="!!selectedColor" [class.rainbow-gradient]="!selectedEmotion" [style.animationDelay]="randomDelay">
+        {{ isSubmitting ? 'Logging...' : 'Log emotion' }}
+      </button>
     </div>
-
-    <div class="form-group">
-      <input type="text" formControlName="reason" placeholder="Why are you feeling this way?">
-    </div>
-
-    <div class="form-group toggle-group" *ngIf="authService.isLoggedIn$ | async">
-      <label class="toggle-label">
-        <input type="checkbox" formControlName="isPublic" style="display: none;">
-        <div class="toggle-track" [class.private]="!emotionForm.get('isPublic')?.value">
-          <div class="toggle-thumb"></div>
-          <span class="toggle-text public-text">Public</span>
-          <span class="toggle-text private-text">Private</span>
-        </div>
-      </label>
-    </div>
-
-    <button type="submit" [disabled]="emotionForm.invalid || isSubmitting" [class.tinted]="!!selectedColor" [class.rainbow-gradient]="!selectedEmotion" [style.animationDelay]="randomDelay">
-      {{ isSubmitting ? 'Logging...' : 'Log emotion' }}
-    </button>
-  </ng-container>
-
-  <div class="success-message" *ngIf="successMessage">
-    {{ successMessage }}
-  </div>
-</form>
+  </form>
+</div>

@@ -13,9 +13,13 @@
 
 <div class="fab-container" #fabContainer>
   <div class="form-overlay" *ngIf="isFormVisible">
-    <app-emotion-form></app-emotion-form>
+    <app-emotion-form (emotionLogStarted)="onEmotionLogStarted()" (emotionLogged)="onEmotionLogged($event)"></app-emotion-form>
   </div>
   <button class="btn-fab-circle" [class.btn-fab-close]="isFormVisible" (click)="toggleForm()">
-    {{ isFormVisible ? '✕' : '+' }}
+    <div class="icon-plus"></div>
   </button>
+</div>
+
+<div class="global-toast" *ngIf="isSuccessToastVisible">
+  Logged Successfully!
 </div>

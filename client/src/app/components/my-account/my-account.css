@@ -8,8 +8,8 @@
 
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   padding: 2.5rem;
   border-radius: 16px;
   border: 1px solid var(--glass-border);
@@ -42,7 +42,7 @@ label {
 
 input {
   padding: 0.8rem;
-  border-radius: 8px;
+  border-radius: 9999px;
   border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text-primary);
@@ -64,7 +64,7 @@ input:focus {
 .btn-primary {
   background: linear-gradient(90deg, #9333ea, #ef4444);
   padding: 0.75rem;
-  border-radius: 8px;
+  border-radius: 9999px;
   border: none;
   color: var(--text-primary);
   font-weight: bold;
@@ -85,7 +85,7 @@ input:focus {
 .btn-secondary {
   background: var(--glass-border);
   padding: 0.75rem;
-  border-radius: 8px;
+  border-radius: 9999px;
   border: 1px solid var(--input-border);
   color: var(--text-primary);
   font-weight: bold;
