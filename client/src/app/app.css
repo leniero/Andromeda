@@ -72,7 +72,7 @@ main.main.route-overlay-center > * {
     display: block;
     overflow-y: auto;
     overflow-x: hidden;
-    pointer-events: none; /* empty areas pass through */
+    pointer-events: auto; /* enable touch scrolling on mobile */
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
