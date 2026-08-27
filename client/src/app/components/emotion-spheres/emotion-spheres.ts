@@ -123,21 +123,23 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const titleText = emotion.toLowerCase();
     const titleWidth = context.measureText(titleText).width;
     
-    const logicalWidth = (emojiWidth + titleWidth) / scaleFactor + 80;
-    const logicalHeight = 240;
+    const logicalWidth = Math.max(emojiWidth, titleWidth) / scaleFactor + 80;
+    const logicalHeight = 500;
     
     canvas.width = logicalWidth * scaleFactor;
     canvas.height = logicalHeight * scaleFactor;
     
     context.textBaseline = 'middle';
-    context.textAlign = 'left';
+    context.textAlign = 'center';
+    
+    const centerX = canvas.width / 2;
     
     context.font = emojiFont;
-    context.fillText(emoji, 10 * scaleFactor, 120 * scaleFactor);
+    context.fillText(emoji, centerX, 180 * scaleFactor);
     
     context.font = titleFont;
     context.fillStyle = this.isLightMode ? '#1f2937' : 'white';
-    context.fillText(titleText, (emojiWidth / scaleFactor + 50) * scaleFactor, 120 * scaleFactor);
+    context.fillText(titleText, centerX, 380 * scaleFactor);
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.generateMipmaps = true;
@@ -147,6 +149,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     sprite.scale.set(logicalWidth * 2, logicalHeight * 2, 1);
     // Save logical width for layout
     sprite.userData['logicalWidth'] = logicalWidth * 2; 
+    sprite.userData['logicalHeight'] = logicalHeight * 2;
     return sprite;
   }
 
@@ -696,7 +699,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     const unscaledHeight = lines.length * (sphereRadius * 0.4);
     
-    const maxAllowedWidth = isMobile ? sphereRadius * 3.5 : sphereRadius * 2.8;
+    const maxAllowedWidth = isMobile ? sphereRadius * 3.5 : sphereRadius * 2.2;
     const maxAllowedHeight = isMobile ? sphereRadius * 4.0 : sphereRadius * 2.8;
     
     if (unscaledMaxLineWidth > 0 && unscaledMaxLineWidth * textScale > maxAllowedWidth) {
@@ -723,8 +726,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     textGroup.userData['textScale'] = textScale;
     
     lines.forEach((line) => {
-       let xOffset = isMobile ? -finalScaledWidth / 2 : sphereRadius * 1.2; 
-       
+       const lineUnscaledWidth = line.width + (line.meshes.length - 1) * (sphereRadius * 0.006);
+       const lineScaledWidth = lineUnscaledWidth * textScale;
+       const centerX = isMobile ? 0 : sphereRadius * 0.9 + finalScaledWidth / 2;
+       let xOffset = centerX - lineScaledWidth / 2; 
        line.meshes.forEach(m => {
            const targetGlobal = new THREE.Vector3(xOffset, startY, 0);
            
@@ -1045,22 +1050,21 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const bottomY = textGroup.userData['layoutBottomY'] || 0;
              const tScale = textGroup.userData['textScale'] || 1.0;
              
-             // Offset Sprites above and below the paragraph
              const isMobile = window.innerWidth <= 768;
              const headerLogicalWidth = header.userData['logicalWidth'];
              const footerLogicalWidth = footer.userData['logicalWidth'];
+             const headerLogicalHeight = header.userData['logicalHeight'] || 480;
              
-             // For left-alignment with block: Use the exact same xOffset as the text
-             // textGroup.userData['maxLineWidth'] handles the block width
-             const textXOffset = isMobile ? -(textGroup.userData['maxLineWidth'] || 0) / 2 : (maxSize * 1.2);
+             const maxLineWidth = textGroup.userData['maxLineWidth'] || 0;
+             const centerX = isMobile ? 0 : (2000 * 0.9) + maxLineWidth / 2; // maxSize is 2000
              
-             const headerX = isMobile ? 0 : textXOffset + (headerLogicalWidth * tScale / 2); 
-             const footerX = isMobile ? 0 : textXOffset + (footerLogicalWidth * tScale / 2);
+             const headerX = centerX;
+             const footerX = centerX;
              
-             header.scale.set(headerLogicalWidth * tScale, 480 * tScale, 1);
+             header.scale.set(headerLogicalWidth * tScale, headerLogicalHeight * tScale, 1);
              footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
              
-             header.position.set(headerX, topY + (850 * tScale), 0);
+             header.position.set(headerX, topY + (1300 * tScale), 0);
              footer.position.set(footerX, bottomY - (600 * tScale), 0);
              
              header.material.opacity = p;
