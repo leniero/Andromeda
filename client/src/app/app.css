@@ -22,7 +22,9 @@
   margin: 0 0 0.5rem 0;
   font-weight: 800;
   font-size: 2rem;
-  background: linear-gradient(90deg, #9333ea, #ef4444);
+  background-image: var(--animated-gradient);
+  background-size: 1600% auto;
+  animation: gradientPan 6s linear infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -31,4 +33,356 @@
   margin: 0;
   color: var(--text-secondary);
   font-weight: 600;
+}
+
+.global-spheres-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Router outlet host - pointer-events:none so dimmer behind it still receives clicks on empty space */
+main.main {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* On overlay routes, enable pointer-events on the routed component card */
+main.main.route-overlay-left > *,
+main.main.route-overlay-right > *,
+main.main.route-overlay-center > * {
+  pointer-events: auto;
+}
+
+/* Mobile: when overlay is active, make main a block scroll container */
+@media (max-width: 768px) {
+  main.main.overlay-active {
+    /* Switch from flex to block so overflow-y works naturally */
+    display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    pointer-events: none; /* empty areas pass through */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  main.main.overlay-active::-webkit-scrollbar {
+    display: none;
+  }
+  main.main.overlay-active > * {
+    /* The routed component element fills width, pointer-events enabled */
+    display: block;
+    width: 100%;
+    pointer-events: none; /* component wrapper transparent areas pass through */
+  }
+}
+
+/* DESKTOP OVERLAYS */
+@media (min-width: 769px) {
+  main.main.route-overlay-left {
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-left: 2rem;
+    padding-top: 0; /* component handles its own top padding */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  main.main.route-overlay-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  main.main.route-overlay-right {
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding-right: 2rem;
+    padding-top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  main.main.route-overlay-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  main.main.route-overlay-left > *,
+  main.main.route-overlay-right > * {
+    flex-shrink: 0;
+  }
+}
+
+.controls-overlay-left {
+  position: absolute;
+  top: calc(7.5rem + env(safe-area-inset-top, 0px));
+  left: 2rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+@media (min-width: 769px) {
+  .controls-overlay-left {
+    top: calc(2rem + env(safe-area-inset-top, 0px));
+    left: 5rem;
+  }
+}
+
+.btn-toggle-theme {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: background 0.2s;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.icon-moon-svg {
+  width: 20px;
+  height: 20px;
+  background-color: var(--text-primary);
+  -webkit-mask: url(/moon.svg) no-repeat center;
+  mask: url(/moon.svg) no-repeat center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.icon-sun-svg {
+  width: 22px;
+  height: 22px;
+  background-color: var(--text-primary);
+  -webkit-mask: url(/sun.max.svg) no-repeat center;
+  mask: url(/sun.max.svg) no-repeat center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.btn-toggle-theme:hover {
+  background: var(--input-border);
+}
+
+.controls-overlay {
+  position: absolute;
+  top: calc(7.5rem + env(safe-area-inset-top, 0px));
+  right: 2rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+@media (min-width: 769px) {
+  .controls-overlay {
+    top: calc(2rem + env(safe-area-inset-top, 0px));
+    right: 5rem;
+  }
+}
+
+.btn-toggle-text {
+  height: 34px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+  pointer-events: auto;
+}
+
+.btn-toggle-text:hover {
+  background: var(--input-border);
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--input-border);
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.view-toggle button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  height: 34px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.view-toggle button:hover {
+  color: var(--text-primary);
+}
+
+.view-toggle button.active {
+  background: var(--input-border);
+  color: var(--text-primary);
+}
+
+.fab-container {
+  position: absolute;
+  bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+}
+
+.form-overlay {
+  width: 320px;
+  max-width: calc(100vw - 4rem);
+}
+
+.btn-fab-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 4px solid var(--text-primary);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-fab-circle:not(.btn-fab-close):hover {
+  background: var(--text-primary) !important;
+  color: var(--bg-primary) !important;
+  transform: scale(1.05) !important;
+}
+
+.btn-fab-circle.btn-fab-close {
+  transform: rotate(45deg);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.btn-fab-circle.btn-fab-close:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .brand-overlay {
+    top: 5rem;
+    left: 1rem;
+  }
+  .controls-overlay {
+    top: calc(6rem + env(safe-area-inset-top, 0px));
+    right: 1rem;
+  }
+  .controls-overlay-left {
+    top: calc(6rem + env(safe-area-inset-top, 0px));
+    left: 1rem;
+  }
+  .fab-container {
+    bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+  }
+}
+
+.global-toast {
+  position: fixed;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 255, 0, 0.2);
+  border: 1px solid rgba(0, 255, 0, 0.4);
+  color: var(--text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  z-index: 999999;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: toastFade 0.4s ease forwards;
+}
+
+@keyframes toastFade {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* The dimmer sits at z-index 5 (above spheres at 1, below main.main at 10) */
+.canvas-dimmer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 5;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.global-spheres-container.spheres-disabled app-emotion-spheres {
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

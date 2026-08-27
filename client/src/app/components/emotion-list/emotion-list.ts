@@ -21,13 +21,9 @@ export class EmotionListComponent implements OnInit {
   private locationService = inject(LocationService);
   private cdr = inject(ChangeDetectorRef);
 
-  emotionColors: { [key: string]: string } = {
-    Anger: 'red', Contempt: 'orangered', Disgust: 'darkorange', Envy: 'gold',
-    Guilt: 'yellow', Shame: 'yellowgreen', Fear: 'green', Sadness: 'lightseagreen',
-    Surprise: 'skyblue', Interest: 'deepskyblue', Hope: 'dodgerblue',
-    Relief: 'blue', Satisfaction: 'slateblue', Joy: 'mediumslateblue', Elation: 'mediumorchid',
-    Pride: 'darkviolet'
-  };
+  getEmotionColor(emotion: string): string {
+    return this.emotionService.getEmotionColor(emotion);
+  }
 
   emotionEmojis: { [key: string]: string } = {
     Anger: '😡', Contempt: '😒', Disgust: '🤢', Envy: '😐',
@@ -101,6 +97,7 @@ export class EmotionListComponent implements OnInit {
     this.emotionService.deleteEmotion(id).subscribe({
       next: () => {
         this.emotions = this.emotions.filter(e => e._id !== id);
+        this.emotionService.notifyEmotionDeleted(id);
         this.deletingId = null;
         this.deleteSuccess = true;
         this.cdr.detectChanges();

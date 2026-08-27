@@ -26,4 +26,8 @@ export class NavbarComponent {
            this.router.url.startsWith('/reset-password') || 
            this.router.url.startsWith('/verify-email');
   }
+
+  get isHomeRoute(): boolean {
+    return this.router.url === '/home';
+  }
 }

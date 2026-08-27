@@ -28,7 +28,7 @@
         </label>
       </div>
 
-      <button type="submit" [disabled]="emotionForm.invalid || isSubmitting" [class.tinted]="!!selectedColor" [class.rainbow-gradient]="!selectedEmotion" [style.animationDelay]="randomDelay">
+      <button type="submit" [disabled]="emotionForm.invalid || isSubmitting" [class.tinted]="!!selectedColor" [class.rainbow-gradient]="!selectedEmotion">
         {{ isSubmitting ? 'Logging...' : 'Log emotion' }}
       </button>
     </div>

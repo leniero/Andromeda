@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap');
 
 :root {
+  --animated-gradient: linear-gradient(90deg, #ff4246, #ff9230, #b78a66, #bce300, #fed703, #00dac3, #31d158, #00d2e0, #3cd3fe, #47acff, #0091ff, #9fb0ff, #6d7cff, #db33f2, #ff375f, #fa25a8, #ff4246);
   --bg-primary: #000000;
   --text-primary: #c9d1d9;
   --text-secondary: rgba(255, 255, 255, 0.8);
@@ -9,27 +10,85 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --nav-bg: rgba(13, 17, 23, 0.7);
   --input-bg: rgba(0, 0, 0, 0.2);
+  --input-bg-solid: rgba(30, 34, 40, 0.95);
   --input-border: rgba(255, 255, 255, 0.2);
   --btn-secondary-bg: rgba(255, 255, 255, 0.1);
   --btn-secondary-hover: rgba(255, 255, 255, 0.2);
   --card-bg: #888;
+  --gradient-btn-text: #000000;
+  --nav-icon-inactive: rgba(255, 255, 255, 0.4);
+  --nav-icon-hover: #ffffff;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
+    --animated-gradient: linear-gradient(90deg, #ff393c, #ff8d28, #ac7f5e, #b2d600, #ffcc02, #00c8b3, #35c759, #03c3d1, #00c0e8, #33a1ff, #0088ff, #8c9eff, #6155f5, #cb30e0, #ff2c55, #ea1c9b, #ff393c);
     --bg-primary: #f9fafb;
     --text-primary: #1f2937;
-    --text-secondary: rgba(0, 0, 0, 0.8);
+    --text-secondary: rgba(0, 0, 0, 0.5);
     --text-tertiary: rgba(0, 0, 0, 0.4);
-    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg: rgba(255, 255, 255, 0.55);
     --glass-border: rgba(0, 0, 0, 0.1);
     --nav-bg: rgba(255, 255, 255, 0.8);
     --input-bg: rgba(0, 0, 0, 0.05);
+    --input-bg-solid: rgba(248, 250, 252, 0.98);
     --input-border: rgba(0, 0, 0, 0.2);
     --btn-secondary-bg: rgba(0, 0, 0, 0.05);
     --btn-secondary-hover: rgba(0, 0, 0, 0.1);
     --card-bg: #e5e7eb;
+    --gradient-btn-text: #000000;
+    --nav-icon-inactive: rgba(0, 0, 0, 0.35);
+    --nav-icon-hover: #000000;
   }
+}
+
+
+html[data-theme='light'] {
+  --animated-gradient: linear-gradient(90deg, #ff393c, #ff8d28, #ac7f5e, #b2d600, #ffcc02, #00c8b3, #35c759, #03c3d1, #00c0e8, #33a1ff, #0088ff, #8c9eff, #6155f5, #cb30e0, #ff2c55, #ea1c9b, #ff393c);
+  --bg-primary: #f9fafb;
+  --text-primary: #1f2937;
+  --text-secondary: rgba(0, 0, 0, 0.5);
+  --text-tertiary: rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --nav-bg: rgba(255, 255, 255, 0.8);
+  --input-bg: rgba(0, 0, 0, 0.05);
+  --input-bg-solid: rgba(248, 250, 252, 0.98);
+  --input-border: rgba(0, 0, 0, 0.2);
+  --btn-secondary-bg: rgba(0, 0, 0, 0.05);
+  --btn-secondary-hover: rgba(0, 0, 0, 0.1);
+  --card-bg: #e5e7eb;
+  --gradient-btn-text: #000000;
+  --nav-icon-inactive: rgba(0, 0, 0, 0.35);
+  --nav-icon-hover: #000000;
+}
+
+html[data-theme='dark'] {
+  --animated-gradient: linear-gradient(90deg, #ff4246, #ff9230, #b78a66, #bce300, #fed703, #00dac3, #31d158, #00d2e0, #3cd3fe, #47acff, #0091ff, #9fb0ff, #6d7cff, #db33f2, #ff375f, #fa25a8, #ff4246);
+  --bg-primary: #000000;
+  --text-primary: #c9d1d9;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(13, 17, 23, 0.7);
+  --input-bg: rgba(0, 0, 0, 0.2);
+  --input-bg-solid: rgba(30, 34, 40, 0.95);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.1);
+  --btn-secondary-hover: rgba(255, 255, 255, 0.2);
+  --card-bg: #444;
+  --gradient-btn-text: #000000;
+  --nav-icon-inactive: rgba(255, 255, 255, 0.4);
+  --nav-icon-hover: #ffffff;
+}
+
+html[data-theme='light'] .dark-only {
+  display: none !important;
+}
+
+html[data-theme='dark'] .light-only {
+  display: none !important;
 }
 
 * {
@@ -53,17 +112,23 @@ input, select, button, textarea {
   box-sizing: border-box;
 }
 
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
 a {
   text-decoration: none;
   color: inherit;
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #9333ea, #ef4444);
-  padding: 0.75rem;
+  background-image: var(--animated-gradient);
+  background-size: 1600% auto;
+  animation: gradientPan 6s linear infinite;
+    padding: 0.75rem;
   border-radius: 9999px;
   border: none;
-  color: white;
+  color: var(--gradient-btn-text);
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
@@ -112,43 +177,21 @@ a {
 }
 
 .rainbow-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #ff0000 0%,
-    #ff8c00 13.333%,
-    #ffd700 26.666%,
-    #008000 40%,
-    #1e90ff 53.333%,
-    #9400d3 66.666%,
-    #ff0000 80%,
-    #ff8c00 93.333%,
-    #ffd700 106.666%
-  ) !important;
-  background-size: 500% 100% !important;
-  animation: rainbow-pulse 4s linear infinite;
-  -webkit-animation: rainbow-pulse 4s linear infinite;
-  color: white !important;
+  background-image: var(--animated-gradient) !important;
+  background-size: 1600% auto !important;
+  animation: gradientPan 6s linear infinite;
+  color: var(--gradient-btn-text) !important;
   opacity: 1 !important;
 }
 
 .rainbow-text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #ff0000 0%,
-    #ff8c00 13.333%,
-    #ffd700 26.666%,
-    #008000 40%,
-    #1e90ff 53.333%,
-    #9400d3 66.666%,
-    #ff0000 80%,
-    #ff8c00 93.333%,
-    #ffd700 106.666%
-  );
-  background-size: 500% 100%;
-  animation: rainbow-pulse 4s linear infinite;
-  -webkit-animation: rainbow-pulse 4s linear infinite;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-image: var(--animated-gradient) !important;
+  background-size: 1600% auto !important;
+  animation: gradientPan 6s linear infinite;
+    -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
 }
 
 @keyframes rainbow-pulse {
@@ -187,4 +230,13 @@ a {
   left: calc(50% - 0.08em);
   width: 0.16em;
   height: 1em;
+}
+
+@keyframes gradientPan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+@-webkit-keyframes gradientPan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }

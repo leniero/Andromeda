@@ -1,6 +1,13 @@
-<app-emotion-spheres [showText]="showText" [viewMode]="viewMode" (emotionSelected)="onEmotionSelected($event)"></app-emotion-spheres>
+<app-emotion-spheres [showText]="showText" [viewMode]="viewMode" [currentTheme]="currentTheme" (emotionSelected)="onEmotionSelected($event)"></app-emotion-spheres>
 
-<div class="controls-overlay" *ngIf="!isZoomed">
+<div class="controls-overlay-left" *ngIf="!isZoomed && !isFormVisible">
+  <button class="btn-toggle-theme" (click)="toggleTheme()">
+    <div *ngIf="currentTheme === 'dark'" class="icon-sun-svg"></div>
+    <div *ngIf="currentTheme === 'light'" class="icon-moon-svg"></div>
+  </button>
+</div>
+
+<div class="controls-overlay" *ngIf="!isZoomed && !isFormVisible">
   <button class="btn-toggle-text" (click)="toggleText()">
     {{ showText ? 'Hide Text' : 'Show Text' }}
   </button>
@@ -13,7 +20,7 @@
 
 <div class="fab-container" #fabContainer>
   <div class="form-overlay" *ngIf="isFormVisible">
-    <app-emotion-form (emotionLogStarted)="onEmotionLogStarted()" (emotionLogged)="onEmotionLogged($event)"></app-emotion-form>
+    <app-emotion-form [initialViewMode]="viewMode" (emotionLogStarted)="onEmotionLogStarted()" (emotionLogged)="onEmotionLogged($event)" (viewModeChanged)="setViewMode($event)"></app-emotion-form>
   </div>
   <button class="btn-fab-circle" [class.btn-fab-close]="isFormVisible" (click)="toggleForm()">
     <div class="icon-plus"></div>

@@ -1,18 +1,53 @@
-<nav class="navbar glass">
-  <a class="nav-brand" [routerLink]="(authService.isLoggedIn$ | async) ? '/home' : '/'" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-    <img class="logo-unselected" src="logo%20white.svg" alt="Andromeda">
-    <img class="logo-selected" src="logo%20color.svg" alt="Andromeda">
+<!-- DESKTOP NAVBAR -->
+<nav class="navbar-wrapper desktop-nav">
+  <div class="navbar-semicircle">
+    <div class="nav-links left">
+      <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+        <a routerLink="/login" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="auth-link">Login</a>
+      </ng-container>
+      <ng-container *ngIf="authService.isLoggedIn$ | async">
+        <a class="icon-link" routerLink="/emotion-list" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Entries">
+          <div class="icon-list-bullet"></div>
+        </a>
+      </ng-container>
+    </div>
+
+    <div class="nav-brand" routerLink="/home" [class.active]="isHomeRoute">
+      <div class="logo"></div>
+    </div>
+
+    <div class="nav-links right">
+      <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+        <a routerLink="/signup" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="auth-link">Sign Up</a>
+      </ng-container>
+      <ng-container *ngIf="authService.isLoggedIn$ | async">
+        <a class="icon-link" routerLink="/my-account" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Account">
+          <div class="icon-person-circle"></div>
+        </a>
+      </ng-container>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE NAVBAR -->
+<nav class="navbar mobile-nav">
+  <a class="nav-brand" [routerLink]="(authService.isLoggedIn$ | async) ? '/home' : '/'" [class.active]="isHomeRoute">
+    <div class="logo"></div>
   </a>
   <div class="nav-links">
     <ng-container *ngIf="authService.isLoggedIn$ | async; else loggedOut">
-      <a routerLink="/emotion-list" routerLinkActive="active">My Entries</a>
-      <a routerLink="/my-account" routerLinkActive="active">Account</a>
+      <a class="icon-link" routerLink="/emotion-list" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Entries">
+        <div class="icon-list-bullet"></div>
+      </a>
+      <a class="icon-link" routerLink="/my-account" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Account">
+        <div class="icon-person-circle"></div>
+      </a>
     </ng-container>
 
     <ng-template #loggedOut>
       <ng-container *ngIf="!isHiddenAuthPage">
-        <a routerLink="/login" routerLinkActive="active">Login</a>
-        <a routerLink="/signup" routerLinkActive="active">Sign Up</a>
+        <a routerLink="/login" routerLinkActive="active" class="auth-link">Login</a>
+        <a routerLink="/signup" routerLinkActive="active" class="auth-link">Sign Up</a>
       </ng-container>
     </ng-template>
   </div>

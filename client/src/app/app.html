@@ -1,4 +1,42 @@
-<app-navbar></app-navbar>
-<main class="main">
+<div class="global-spheres-container" [class.spheres-disabled]="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute">
+  <app-emotion-spheres [showText]="showText" [viewMode]="viewMode" [currentTheme]="currentTheme" (emotionSelected)="onEmotionSelected($event)"></app-emotion-spheres>
+  
+  <div class="canvas-dimmer" *ngIf="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute" (click)="dismissOverlay()"></div>
+
+  <div class="controls-overlay-left" *ngIf="!isZoomed && !isFormVisible && !isListRoute && !isAccountRoute && !isAuthRoute && !isWelcomeRoute">
+    <button class="btn-toggle-theme" (click)="toggleTheme()">
+      <div *ngIf="currentTheme === 'dark'" class="icon-sun-svg"></div>
+      <div *ngIf="currentTheme === 'light'" class="icon-moon-svg"></div>
+    </button>
+  </div>
+
+  <div class="controls-overlay" *ngIf="!isZoomed && !isFormVisible && !isListRoute && !isAccountRoute && !isAuthRoute && !isWelcomeRoute">
+
+    <button class="btn-toggle-text" (click)="toggleText()">
+      {{ showText ? 'Hide Text' : 'Show Text' }}
+    </button>
+    
+    <div class="view-toggle" *ngIf="authService.isLoggedIn$ | async">
+      <button [class.active]="viewMode === 'world'" (click)="setViewMode('world')">World</button>
+      <button [class.active]="viewMode === 'me'" (click)="setViewMode('me')">Me</button>
+    </div>
+  </div>
+
+  <div class="fab-container" #fabContainer *ngIf="!isListRoute && !isAccountRoute && !isAuthRoute && !isWelcomeRoute">
+    <div class="form-overlay" *ngIf="isFormVisible">
+      <app-emotion-form [initialViewMode]="viewMode" (emotionLogStarted)="onEmotionLogStarted()" (emotionLogged)="onEmotionLogged($event)" (viewModeChanged)="setViewMode($event)"></app-emotion-form>
+    </div>
+    <button class="btn-fab-circle" [class.btn-fab-close]="isFormVisible" (click)="toggleForm()">
+      <div class="icon-plus"></div>
+    </button>
+  </div>
+
+  <div class="global-toast" *ngIf="isSuccessToastVisible">
+    Logged Successfully!
+  </div>
+</div>
+
+<app-navbar *ngIf="!isWelcomeRoute"></app-navbar>
+<main class="main" [class.route-overlay-left]="isListRoute" [class.route-overlay-right]="isAccountRoute || isAuthRoute" [class.route-overlay-center]="isWelcomeRoute" [class.overlay-active]="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute">
   <router-outlet></router-outlet>
 </main>

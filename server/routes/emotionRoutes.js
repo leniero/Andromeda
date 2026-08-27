@@ -13,6 +13,7 @@ router.post('/submit', auth.optional, async (req, res) => {
     const { emotion, text_input, latitude, longitude, isPublic } = req.body;
 
     const isPublicPost = req.user ? (isPublic !== false) : true;
+    const now = new Date();
 
     let username = undefined;
     if (req.user) {
@@ -30,7 +31,7 @@ router.post('/submit', auth.optional, async (req, res) => {
         text_input: text_input ? text_input.trim() : text_input,
         latitude,
         longitude,
-        local_time: new Date()
+        local_time: now
       });
       await newEmotion.save();
     }
@@ -44,13 +45,16 @@ router.post('/submit', auth.optional, async (req, res) => {
         text_input: text_input ? text_input.trim() : text_input,
         latitude,
         longitude,
-        local_time: new Date(),
+        local_time: now,
         isPublic: isPublicPost
       });
       await userEmotion.save();
     }
 
-    res.status(201).json({ message: 'Emotion submitted successfully' });
+    res.status(201).json({ 
+      message: 'Emotion submitted successfully',
+      username: username // Send back username for the frontend to use
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -59,8 +63,16 @@ router.post('/submit', auth.optional, async (req, res) => {
 // Get all public emotions (accessible to everyone)
 router.get('/get_emotions', auth.optional, async (req, res) => {
   try {
-    const publicEmotions = await Emotion.find().lean();
+    let publicEmotions = await Emotion.find().lean();
     let userPrivateEmotions = [];
+    
+    // If not logged in, scrub usernames to make them anonymous
+    if (!req.user) {
+      publicEmotions = publicEmotions.map(e => {
+        const { username, ...rest } = e;
+        return rest;
+      });
+    }
     
     if (req.user) {
       userPrivateEmotions = await UserEmotion.find({ userId: req.user._id, isPublic: false }).lean();
@@ -118,7 +130,10 @@ router.delete('/:id', auth.required, async (req, res) => {
         text_input: userEmotion.text_input,
         latitude: userEmotion.latitude,
         longitude: userEmotion.longitude,
-        local_time: userEmotion.local_time
+        local_time: {
+          $gte: new Date(userEmotion.local_time.getTime() - 2000),
+          $lte: new Date(userEmotion.local_time.getTime() + 2000)
+        }
       });
     }
 

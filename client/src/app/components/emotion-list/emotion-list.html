@@ -39,7 +39,7 @@
           </div>
           <div class="emotion-icon-container">
             <div class="orbit-container">
-              <div class="circle" [style.backgroundColor]="emotionColors[emotion.emotion] || 'gray'">
+              <div class="circle" [style.backgroundColor]="getEmotionColor(emotion.emotion)">
                 <span class="emoji">{{ emotionEmojis[emotion.emotion] || '😶' }}</span>
               </div>
               <svg viewBox="0 0 100 100" class="orbit-svg">

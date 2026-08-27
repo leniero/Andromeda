@@ -1,23 +1,26 @@
 .auth-container {
+  pointer-events: none;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100dvh;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .glass-card {
+  pointer-events: auto;
   background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  padding: 2.5rem;
+  padding: 1.5rem;
   border-radius: 16px;
   border: 1px solid var(--glass-border);
   width: 100%;
-  max-width: 400px;
+  width: 320px;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 h2 {
@@ -29,7 +32,7 @@ h2 {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 label {
@@ -38,13 +41,14 @@ label {
 }
 
 input {
-  padding: 0.8rem;
+padding: 0.75rem;
   border-radius: 9999px;
   border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.8rem;
+  min-height: 48px;
 }
 
 input:focus {
@@ -59,11 +63,13 @@ input:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #9333ea, #ef4444);
-  padding: 1rem;
+background-image: var(--animated-gradient);
+  background-size: 1600% auto;
+  animation: gradientPan 6s linear infinite;
+    padding: 0.75rem;
   border-radius: 9999px;
   border: none;
-  color: var(--text-primary);
+  color: var(--gradient-btn-text);
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;

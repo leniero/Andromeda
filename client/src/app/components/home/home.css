@@ -10,6 +10,60 @@
 
 
 
+.controls-overlay-left {
+  position: absolute;
+  top: calc(7.5rem + env(safe-area-inset-top, 0px));
+  left: 2rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.btn-toggle-theme {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.icon-moon-svg {
+  width: 20px;
+  height: 20px;
+  background-color: var(--text-primary);
+  -webkit-mask: url(/moon.svg) no-repeat center;
+  mask: url(/moon.svg) no-repeat center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.icon-sun-svg {
+  width: 22px;
+  height: 22px;
+  background-color: var(--text-primary);
+  -webkit-mask: url(/sun.max.svg) no-repeat center;
+  mask: url(/sun.max.svg) no-repeat center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.btn-toggle-theme:hover {
+  background: var(--input-border);
+}
+
 .controls-overlay {
   position: absolute;
   top: calc(7.5rem + env(safe-area-inset-top, 0px));
@@ -22,7 +76,12 @@
 }
 
 .btn-toggle-text {
-  padding: 0.5rem 1rem;
+  height: 34px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   background: var(--glass-border);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -54,7 +113,12 @@
   background: transparent;
   border: none;
   color: var(--text-tertiary);
-  padding: 0.5rem 1rem;
+  height: 34px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -106,8 +170,10 @@
   padding: 0;
 }
 
-.btn-fab-circle:hover {
-  background: var(--glass-border);
+.btn-fab-circle:not(.btn-fab-close):hover {
+  background: var(--text-primary) !important;
+  color: var(--bg-primary) !important;
+  transform: scale(1.05) !important;
 }
 
 .btn-fab-circle.btn-fab-close {
@@ -130,6 +196,10 @@
   .controls-overlay {
     top: calc(6rem + env(safe-area-inset-top, 0px));
     right: 1rem;
+  }
+  .controls-overlay-left {
+    top: calc(6rem + env(safe-area-inset-top, 0px));
+    left: 1rem;
   }
   .fab-container {
     bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));

@@ -4,6 +4,8 @@
   color: var(--text-primary);
   padding-top: 5rem;
   width: 100%;
+  min-height: 100%;
+  pointer-events: none; /* empty space passes through to canvas dimmer on desktop */
 }
 
 .container {
@@ -14,6 +16,7 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  pointer-events: auto; /* list items are interactive */
 }
 
 .emotionList {
@@ -116,16 +119,18 @@
 
 .text {
   font-size: 0.9em;
-  background-color: var(--card-bg);
-  padding: 15px 60px 15px 20px;
-  border-radius: 24px 0 0 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  padding: 12px 56px 12px 20px;
+  border-radius: 20px;
   text-align: left;
   width: 100%;
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  -webkit-mask-image: radial-gradient(52px at 100% 50%, transparent 99%, black 100%);
-  mask-image: radial-gradient(52px at 100% 50%, transparent 99%, black 100%);
+  /* NO mask-image — it breaks backdrop-filter on Safari/WebKit */
 }
 
 .meta-row {
@@ -209,10 +214,9 @@
 }
 
 .myEmotion .text {
-  padding: 15px 20px 15px 60px;
-  border-radius: 0 24px 24px 0;
-  -webkit-mask-image: radial-gradient(52px at 0% 50%, transparent 99%, black 100%);
-  mask-image: radial-gradient(52px at 0% 50%, transparent 99%, black 100%);
+  padding: 12px 20px 12px 56px;
+  border-radius: 20px;
+  /* Removed mask-image — breaks backdrop-filter in WebKit */
 }
 
 .myEmotion .hanging-container {
@@ -221,10 +225,15 @@
 
 @media (max-width: 768px) {
   .pageContainer {
-    padding-top: calc(5rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(5.5rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 4rem;
+    /* On mobile the pageContainer IS the scroll container */
+    pointer-events: auto;
+    min-height: 100dvh;
   }
   .container {
     padding: 10px;
+    pointer-events: auto;
   }
   .emotionItem {
     padding: 5px;
@@ -245,5 +254,13 @@
   .delete-confirm button {
     padding: 6px 8px;
     font-size: 0.85em;
+  }
+}
+
+@media (min-width: 769px) {
+  .pageContainer {
+    /* On desktop, the list is inside main.main which scrolls.
+       Add top padding equal to the semicircle navbar height + gap */
+    padding-top: 7rem;
   }
 }

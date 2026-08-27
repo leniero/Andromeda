@@ -1,4 +1,4 @@
-import { Component, inject, Output, EventEmitter, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, Output, EventEmitter, OnInit, ViewChild, ElementRef, ChangeDetectorRef, Input } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
@@ -15,6 +15,8 @@ import { CommonModule } from '@angular/common';
 export class EmotionFormComponent implements OnInit {
   @Output() emotionLogged = new EventEmitter<EmotionData>();
   @Output() emotionLogStarted = new EventEmitter<void>();
+  @Output() viewModeChanged = new EventEmitter<'world' | 'me'>();
+  @Input() initialViewMode: 'world' | 'me' = 'world';
   @ViewChild('formElement') formElement!: ElementRef;
   emotionForm: FormGroup;
   isSubmitting = false;
@@ -33,16 +35,13 @@ export class EmotionFormComponent implements OnInit {
     Satisfaction: '😊', Joy: '😆', Elation: '😌', Pride: '🥹'
   };
 
-  emotionColors: { [key: string]: string } = {
-    Anger: 'rgba(255, 0, 0, 0.7)', Contempt: 'rgba(255, 69, 0, 0.7)', Disgust: 'rgba(255, 140, 0, 0.7)', Envy: 'rgba(255, 215, 0, 0.7)',
-    Guilt: 'rgba(255, 255, 0, 0.7)', Shame: 'rgba(154, 205, 50, 0.7)', Fear: 'rgba(0, 128, 0, 0.7)', Sadness: 'rgba(32, 178, 170, 0.7)',
-    Surprise: 'rgba(135, 206, 235, 0.7)', Interest: 'rgba(0, 191, 255, 0.7)', Hope: 'rgba(30, 144, 255, 0.7)',
-    Relief: 'rgba(0, 0, 255, 0.7)', Satisfaction: 'rgba(106, 90, 205, 0.7)', Joy: 'rgba(123, 104, 238, 0.7)', Elation: 'rgba(186, 85, 211, 0.7)',
-    Pride: 'rgba(148, 0, 211, 0.7)'
-  };
 
   get selectedEmotion() { return this.emotionForm.get('emotion')?.value; }
-  get selectedColor() { return this.selectedEmotion ? this.emotionColors[this.selectedEmotion] : ''; }
+  get selectedColor() { 
+    if (!this.selectedEmotion) return '';
+    const hex = this.emotionService.getEmotionColor(this.selectedEmotion);
+    return hex + 'b3'; // Append 70% opacity alpha channel
+  }
 
   successMessage = '';
   morphState: 'idle' | 'morphing' | 'floating' = 'idle';
@@ -60,11 +59,20 @@ export class EmotionFormComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Set initial toggle state based on input view mode
+    if (this.initialViewMode === 'me') {
+      this.emotionForm.patchValue({ isPublic: false });
+    }
+
     this.locationService.getLocation().then(loc => {
       this.emotionForm.patchValue({
         latitude: loc.latitude,
         longitude: loc.longitude
       });
+    });
+
+    this.emotionForm.get('isPublic')?.valueChanges.subscribe(isPublic => {
+      this.viewModeChanged.emit(isPublic ? 'world' : 'me');
     });
   }
 
@@ -84,11 +92,12 @@ export class EmotionFormComponent implements OnInit {
       }
       
       this.emotionService.logEmotion(formData).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           const spawnedEmotion: EmotionData = {
             ...formData,
             local_time: new Date().toISOString(),
-            _id: Math.random().toString(36).substr(2, 9)
+            _id: Math.random().toString(36).substr(2, 9),
+            username: res.username // Use the username returned by the backend
           };
           
           this.isSubmitting = false;
@@ -100,7 +109,7 @@ export class EmotionFormComponent implements OnInit {
           
           // 1. Wait 600ms for the CSS transition to circle to complete
           setTimeout(() => {
-            // 2. Hold the perfect circle shape for 2 seconds
+            // 2. Hold the perfect circle shape for 1 second
             setTimeout(() => {
               this.morphState = 'floating';
               this.emotionLogStarted.emit();
@@ -121,7 +130,7 @@ export class EmotionFormComponent implements OnInit {
                 }
                 if (this.cdr) this.cdr.detectChanges();
               }, 600);
-            }, 2000);
+            }, 1000);
           }, 600);
         },
         error: (err) => {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { Subscription } from 'rxjs';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
@@ -20,6 +21,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   @ViewChild('fgCanvas', { static: true }) fgCanvasRef!: ElementRef<HTMLCanvasElement>;
   @Input() showText: boolean = true;
   @Input() viewMode: 'world' | 'me' = 'world';
+  @Input() currentTheme: 'dark' | 'light' = 'dark';
   @Output() emotionSelected = new EventEmitter<boolean>();
 
   selectedEmotion: any = null;
@@ -45,6 +47,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private isCameraAnimating = false;
   private isLightMode = false;
   private mediaQueryList!: MediaQueryList;
+  private deleteSub!: Subscription;
 
   public formatDate(dateString: string): string {
     const options: Intl.DateTimeFormatOptions = { 
@@ -54,13 +57,48 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     return new Date(dateString).toLocaleDateString(undefined, options);
   }
 
-  public emotionColors: Record<string, string> = {
-    'Anger': 'red', 'Contempt': 'orangered', 'Disgust': 'darkorange', 'Envy': 'gold',
-    'Guilt': 'yellow', 'Shame': 'yellowgreen', 'Fear': 'green', 'Sadness': 'lightseagreen',
-    'Surprise': 'skyblue', 'Interest': 'deepskyblue', 'Hope': 'dodgerblue',
-    'Relief': 'blue', 'Satisfaction': 'slateblue', 'Joy': 'mediumslateblue', 'Elation': 'mediumorchid',
-    'Pride': 'darkviolet'
+  public emotionColorsLight: Record<string, string> = {
+    'Anger': '#ff393c',        // 1. Red
+    'Contempt': '#ff8d28',     // 2. Orange
+    'Disgust': '#ac7f5e',      // 3. Brown
+    'Envy': '#b2d600',         // 4. Lime (NEW)
+    'Guilt': '#ffcc02',        // 5. Yellow
+    'Shame': '#00c8b3',        // 6. Mint
+    'Fear': '#35c759',         // 7. Green
+    'Sadness': '#03c3d1',      // 8. Teal
+    'Surprise': '#00c0e8',     // 9. Cyan
+    'Interest': '#33a1ff',     // 10. Sky Blue (NEW)
+    'Hope': '#0088ff',         // 11. Blue
+    'Relief': '#8c9eff',       // 12. Periwinkle (NEW)
+    'Satisfaction': '#6155f5', // 13. Indigo
+    'Joy': '#cb30e0',          // 14. Purple
+    'Elation': '#ff2c55',      // 15. Pink
+    'Pride': '#ea1c9b'         // 16. Magenta (NEW)
   };
+
+  public emotionColorsDark: Record<string, string> = {
+    'Anger': '#ff4246',        // 1. Red
+    'Contempt': '#ff9230',     // 2. Orange
+    'Disgust': '#b78a66',      // 3. Brown
+    'Envy': '#bce300',         // 4. Lime (NEW)
+    'Guilt': '#fed703',        // 5. Yellow
+    'Shame': '#00dac3',        // 6. Mint
+    'Fear': '#31d158',         // 7. Green
+    'Sadness': '#00d2e0',      // 8. Teal
+    'Surprise': '#3cd3fe',     // 9. Cyan
+    'Interest': '#47acff',     // 10. Sky Blue (NEW)
+    'Hope': '#0091ff',         // 11. Blue
+    'Relief': '#9fb0ff',       // 12. Periwinkle (NEW)
+    'Satisfaction': '#6d7cff', // 13. Indigo
+    'Joy': '#db33f2',          // 14. Purple
+    'Elation': '#ff375f',      // 15. Pink
+    'Pride': '#fa25a8'         // 16. Magenta (NEW)
+  };
+
+  private getEmotionColor(emotion: string): string {
+    const palette = this.isLightMode ? this.emotionColorsLight : this.emotionColorsDark;
+    return palette[emotion] || (this.isLightMode ? '#888888' : '#bbbbbb');
+  }
 
   public emotionEmojis: { [key: string]: string } = {
     Anger: '😡', Contempt: '😒', Disgust: '🤢', Envy: '😐',
@@ -166,12 +204,16 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.containerRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
     this.containerRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
     
-    // Listen for theme changes
+    // Listen for theme changes from system preference, although now overridden by Input
     if (typeof window !== 'undefined') {
       this.mediaQueryList = window.matchMedia('(prefers-color-scheme: light)');
-      this.isLightMode = this.mediaQueryList.matches;
+      this.isLightMode = this.currentTheme === 'light'; // override with Input value
       this.mediaQueryList.addEventListener('change', this.onThemeChange);
     }
+    
+    this.deleteSub = this.emotionService.emotionDeleted$.subscribe(deletedId => {
+      this.removeSphereById(deletedId);
+    });
   }
 
   private onThemeChange = (e: MediaQueryListEvent) => {
@@ -212,6 +254,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
          }
       }
     });
+    
+    // Update sphere colors
+    this.spheres.forEach(sphere => {
+      const emotionData = sphere.userData['emotion'];
+      if (emotionData) {
+        const newColor = new THREE.Color(this.getEmotionColor(emotionData.emotion));
+        if (sphere.material instanceof THREE.MeshBasicMaterial) {
+          sphere.material.color = newColor;
+        }
+        sphere.children.forEach(child => {
+          if (child.userData['isSolidChild'] && child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+            child.material.color = newColor;
+          }
+        });
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -223,6 +281,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       this.textGroups.forEach(group => {
         group.visible = this.showText && !this.selectedEmotion;
       });
+    }
+
+    if (changes['currentTheme']) {
+      this.isLightMode = this.currentTheme === 'light';
+      this.updateThreeJsColors();
     }
   }
 
@@ -357,9 +420,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       };
       this.emotionSelected.emit(true);
       
-      // Move selected to layer 1 for sharp rendering
-      this.spheres.forEach(s => s.layers.set(0));
+      // Move selected to layer 1 for sharp rendering and make it solid
+      this.spheres.forEach(s => {
+        s.layers.set(0);
+        (s.material as THREE.MeshBasicMaterial).wireframe = true;
+      });
       selectedSphere.layers.set(1);
+      (selectedSphere.material as THREE.MeshBasicMaterial).wireframe = false;
       
       // We don't hide 3D text anymore! It will morph.
       this.textGroups.forEach(tg => {
@@ -399,6 +466,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.spheres.forEach(s => {
       s.layers.set(0);
       const mat = s.material as THREE.MeshBasicMaterial;
+      mat.wireframe = true;
       mat.opacity = 1;
     });
     this.textGroups.forEach(tg => {
@@ -452,6 +520,26 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.textGroups = [];
   }
 
+  private removeSphereById(emotionId: string): void {
+    // Remove sphere
+    const sphereIndex = this.spheres.findIndex(s => s.userData['emotion']?._id === emotionId);
+    if (sphereIndex !== -1) {
+      const s = this.spheres[sphereIndex];
+      this.scene.remove(s);
+      s.geometry.dispose();
+      (s.material as THREE.Material).dispose();
+      this.spheres.splice(sphereIndex, 1);
+    }
+    
+    // Remove text group
+    const textGroupIndex = this.textGroups.findIndex(tg => tg.userData['emotionId'] === emotionId);
+    if (textGroupIndex !== -1) {
+      const tg = this.textGroups[textGroupIndex];
+      this.scene.remove(tg);
+      this.textGroups.splice(textGroupIndex, 1);
+    }
+  }
+
   private fetchData(): void {
     const request$ = this.viewMode === 'world' ? this.emotionService.getEmotions() : this.emotionService.getUserEmotions();
     request$.subscribe({
@@ -476,12 +564,17 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const maxSize = 2000;
     const initialSize = maxSize;
     
-    const color = this.emotionColors[emotion.emotion] || 'gray';
+    const color = this.getEmotionColor(emotion.emotion);
     const density = this.calculateDensity(emotion, allEmotions.length ? allEmotions : [emotion], 6000);
     
     const geometry = new THREE.SphereGeometry(initialSize, 32, 32);
-    const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
+    const material = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 1 });
     const sphere = new THREE.Mesh(geometry, material);
+
+    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
+    const solidSphere = new THREE.Mesh(geometry, solidMaterial);
+    solidSphere.userData = { isSolidChild: true, framesAlive: 0 };
+    sphere.add(solidSphere);
 
     const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
     const longitudeInRadians = THREE.MathUtils.degToRad(emotion.longitude);
@@ -810,6 +903,20 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         }
       }
       
+      // Fade out solid child if it exists
+      const solidChild = sphere.children.find(c => c.userData['isSolidChild']) as THREE.Mesh;
+      if (solidChild) {
+        solidChild.userData['framesAlive']++;
+        if (solidChild.userData['framesAlive'] > 60) { // wait ~1 second before fading
+          const mat = solidChild.material as THREE.MeshBasicMaterial;
+          mat.opacity -= 0.005; // Fade out slowly over ~3 seconds
+          if (mat.opacity <= 0) {
+            sphere.remove(solidChild);
+            mat.dispose();
+          }
+        }
+      }
+      
       sphere.rotation.x += 0.01;
       sphere.rotation.y += 0.01;
 
@@ -995,6 +1102,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.fgRenderer) this.fgRenderer.dispose();
     if (this.mediaQueryList) {
       this.mediaQueryList.removeEventListener('change', this.onThemeChange);
+    }
+    if (this.deleteSub) {
+      this.deleteSub.unsubscribe();
     }
   }
 }

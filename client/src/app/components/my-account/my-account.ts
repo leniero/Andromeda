@@ -22,13 +22,9 @@ export class MyAccountComponent implements OnInit {
   updateSuccess: string = '';
   lastEmotion: EmotionData | null = null;
   
-  emotionColors: { [key: string]: string } = {
-    Anger: 'red', Contempt: 'orangered', Disgust: 'darkorange', Envy: 'gold',
-    Guilt: 'yellow', Shame: 'yellowgreen', Fear: 'green', Sadness: 'lightseagreen',
-    Surprise: 'skyblue', Interest: 'deepskyblue', Hope: 'dodgerblue',
-    Relief: 'blue', Satisfaction: 'slateblue', Joy: 'mediumslateblue', Elation: 'mediumorchid',
-    Pride: 'darkviolet'
-  };
+  getEmotionColor(emotion: string): string {
+    return this.emotionService.getEmotionColor(emotion);
+  }
 
   emotionEmojis: { [key: string]: string } = {
     Anger: '😡', Contempt: '😒', Disgust: '🤢', Envy: '😐',
