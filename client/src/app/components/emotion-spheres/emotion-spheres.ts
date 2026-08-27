@@ -1060,8 +1060,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              header.scale.set(headerLogicalWidth * tScale, 480 * tScale, 1);
              footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
              
-             header.position.set(headerX, topY + (350 * tScale), 0);
-             footer.position.set(footerX, bottomY - (300 * tScale), 0);
+             header.position.set(headerX, topY + (850 * tScale), 0);
+             footer.position.set(footerX, bottomY - (600 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;
