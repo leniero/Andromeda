@@ -110,6 +110,11 @@ body, html {
 input, select, button, textarea {
   font-family: inherit;
   box-sizing: border-box;
+  text-align: center;
+}
+
+select {
+  text-align-last: center;
 }
 
 input::placeholder, textarea::placeholder {
