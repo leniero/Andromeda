@@ -588,6 +588,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians);
 
     sphere.position.set(x, y, z);
+    sphere.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     
     sphere.userData = {
       animationParams: {
@@ -598,6 +599,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         offsetX: Math.random() * Math.PI * 2,
         offsetY: Math.random() * Math.PI * 2,
         offsetZ: Math.random() * Math.PI * 2,
+        spinX: (Math.random() - 0.5) * 0.02,
+        spinY: (Math.random() - 0.5) * 0.02,
+        spinZ: (Math.random() - 0.5) * 0.02,
       },
       originalPosition: { x, y, z },
       creationTime: emotion.local_time,
@@ -615,7 +619,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       textGroup = new THREE.Group();
     }
     
-    textGroup.userData = { sphere, rotationSpeed: -0.01, originalScale: 1.0, emotionId: emotion._id };
+    const randomTextSpeed = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.01 + 0.005);
+    textGroup.userData = { sphere, rotationSpeed: randomTextSpeed, originalScale: 1.0, emotionId: emotion._id };
     textGroup.position.copy(sphere.position);
     textGroup.visible = this.showText;
     this.scene.add(textGroup);
@@ -832,7 +837,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     // Slowly rotate the entire scene horizontally, but pause if inspecting an emotion
     if (!this.selectedEmotion) {
-      this.scene.rotation.y += 0.0015;
+      this.scene.rotation.y += 0.003;
     }
 
     let time = Date.now() * 0.025;
@@ -947,8 +952,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         }
       }
       
-      sphere.rotation.x += 0.01;
-      sphere.rotation.y += 0.01;
+      const spinParams = sphere.userData['animationParams'];
+      if (spinParams) {
+        sphere.rotation.x += spinParams.spinX || 0.01;
+        sphere.rotation.y += spinParams.spinY || 0.01;
+        sphere.rotation.z += spinParams.spinZ || 0;
+      }
 
       // Update sphere size based on elapsed time (older = smaller)
       const size = this.calculateSizeOverTime(sphere.userData['creationTime'], minSize, maxSize);
