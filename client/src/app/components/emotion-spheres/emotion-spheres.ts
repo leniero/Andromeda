@@ -138,7 +138,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     context.fillText(emoji, centerX, 180 * scaleFactor);
     
     context.font = titleFont;
-    context.fillStyle = this.isLightMode ? '#1f2937' : 'white';
+    context.fillStyle = this.isLightMode ? 'rgba(31, 41, 55, 0.6)' : 'rgba(255, 255, 255, 0.6)';
     context.fillText(titleText, centerX, 380 * scaleFactor);
     
     const texture = new THREE.CanvasTexture(canvas);
@@ -372,7 +372,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       
       const direction = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize();
       
-      const isMobile = window.innerWidth <= 768;
+      const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
       const right = new THREE.Vector3().crossVectors(this.camera.up, direction).normalize();
       const up = new THREE.Vector3().crossVectors(direction, right).normalize();
       
@@ -638,7 +638,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
 
   private calculateTargetLayout(textGroup: THREE.Group, sphereRadius: number) {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
     let textScale = 0.75; 
     
     const meshes: { mesh: THREE.Mesh, char: string, width: number, parentQuat: THREE.Quaternion }[] = [];
@@ -710,7 +710,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         textScale = Math.min(textScale, maxAllowedHeight / unscaledHeight);
     }
     
-    textScale = Math.min(textScale, 0.7);
+    textScale = Math.min(textScale, 0.6);
     
     const flatLineHeight = sphereRadius * 0.35 * textScale;
     const finalScaledWidth = unscaledMaxLineWidth * textScale;
@@ -1054,7 +1054,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const bottomY = textGroup.userData['layoutBottomY'] || 0;
              const tScale = textGroup.userData['textScale'] || 1.0;
              
-             const isMobile = window.innerWidth <= 768;
+             const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
              const headerLogicalWidth = header.userData['logicalWidth'];
              const footerLogicalWidth = footer.userData['logicalWidth'];
              const headerLogicalHeight = header.userData['logicalHeight'] || 480;
@@ -1069,7 +1069,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
              
              header.position.set(headerX, topY + (1300 * tScale), 0);
-             footer.position.set(footerX, bottomY - (150 * tScale), 0);
+             footer.position.set(footerX, bottomY - (100 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;
@@ -1096,7 +1096,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.selectedEmotion) {
       const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
       if (selectedSphere) {
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
         
         const finalSize = selectedSphere.userData['currentSize'] || 350;
 
