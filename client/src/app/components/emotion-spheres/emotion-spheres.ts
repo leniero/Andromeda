@@ -8,6 +8,104 @@ import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
 
+const simplexNoise3D = `
+// GLSL 3D Simplex noise
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v) {
+  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+  vec3 i  = floor(v + dot(v, C.yyy) );
+  vec3 x0 = v - i + dot(i, C.xxx) ;
+
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min( g.xyz, l.zxy );
+  vec3 i2 = max( g.xyz, l.zxy );
+
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+
+  i = mod289(i);
+  vec4 p = permute( permute( permute(
+             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+  float n_ = 0.142857142857;
+  vec3  ns = n_ * D.wyz - D.xzx;
+
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_ );
+
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+
+  vec4 b0 = vec4( x.xy, y.xy );
+  vec4 b1 = vec4( x.zw, y.zw );
+
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+  vec3 p0 = vec3(a0.xy,h.x);
+  vec3 p1 = vec3(a0.zw,h.y);
+  vec3 p2 = vec3(a1.xy,h.z);
+  vec3 p3 = vec3(a1.zw,h.w);
+
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  p0 *= norm.x;
+  p1 *= norm.y;
+  p2 *= norm.z;
+  p3 *= norm.w;
+
+  vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+}
+`;
+
+const emotionDistortionProfiles: Record<string, { amplitude: number, frequency: number, speed: number, pulseAmplitude: number, pulseSpeed: number, shapeType: number }> = {
+  // Intense & Erratic (High noise, fast throb, SPIKY shape)
+  'Anger': { amplitude: 0.35, frequency: 0.012, speed: 6.0, pulseAmplitude: 0.0, pulseSpeed: 0.0, shapeType: 1.0 },
+  'Fear': { amplitude: 0.28, frequency: 0.015, speed: 7.0, pulseAmplitude: 0.02, pulseSpeed: 15.0, shapeType: 1.0 },
+  'Disgust': { amplitude: 0.25, frequency: 0.005, speed: 2.0, pulseAmplitude: 0.05, pulseSpeed: 3.0, shapeType: 2.0 }, // Ridged
+  
+  // Energetic & Bubbly (Medium noise, bouncy pulse, ROUND shape)
+  'Joy': { amplitude: 0.25, frequency: 0.003, speed: 3.0, pulseAmplitude: 0.12, pulseSpeed: 4.0, shapeType: 0.0 },
+  'Elation': { amplitude: 0.30, frequency: 0.0035, speed: 3.5, pulseAmplitude: 0.14, pulseSpeed: 5.0, shapeType: 0.0 },
+  'Surprise': { amplitude: 0.28, frequency: 0.004, speed: 4.0, pulseAmplitude: 0.10, pulseSpeed: 6.0, shapeType: 0.0 },
+  
+  // Negative & Heavy (Low frequency noise, slow heavy throb, ROUND shape)
+  'Sadness': { amplitude: 0.16, frequency: 0.001, speed: 0.5, pulseAmplitude: 0.06, pulseSpeed: 1.0, shapeType: 0.0 },
+  'Guilt': { amplitude: 0.18, frequency: 0.0015, speed: 0.8, pulseAmplitude: 0.05, pulseSpeed: 1.5, shapeType: 0.0 },
+  'Shame': { amplitude: 0.12, frequency: 0.001, speed: 0.5, pulseAmplitude: 0.03, pulseSpeed: 0.8, shapeType: 0.0 },
+  
+  // Mixed / Tense (Asymmetric, irregular feel, RIDGED shape)
+  'Contempt': { amplitude: 0.20, frequency: 0.003, speed: 1.5, pulseAmplitude: 0.05, pulseSpeed: 2.0, shapeType: 2.0 },
+  'Envy': { amplitude: 0.22, frequency: 0.004, speed: 2.0, pulseAmplitude: 0.06, pulseSpeed: 2.5, shapeType: 2.0 },
+  
+  // Positive & Focused (Smooth, rhythmic pulse, ROUND shape)
+  'Pride': { amplitude: 0.20, frequency: 0.002, speed: 1.5, pulseAmplitude: 0.08, pulseSpeed: 2.0, shapeType: 0.0 },
+  'Hope': { amplitude: 0.16, frequency: 0.0015, speed: 1.2, pulseAmplitude: 0.10, pulseSpeed: 2.5, shapeType: 0.0 },
+  'Interest': { amplitude: 0.18, frequency: 0.0025, speed: 2.0, pulseAmplitude: 0.06, pulseSpeed: 3.0, shapeType: 0.0 },
+  
+  // Calm & Breathing (Very low noise, deep slow pulse, ROUND shape)
+  'Relief': { amplitude: 0.08, frequency: 0.001, speed: 0.4, pulseAmplitude: 0.10, pulseSpeed: 1.0, shapeType: 0.0 },
+  'Satisfaction': { amplitude: 0.05, frequency: 0.0008, speed: 0.3, pulseAmplitude: 0.08, pulseSpeed: 0.8, shapeType: 0.0 }
+};
+
 @Component({
   selector: 'app-emotion-spheres',
   standalone: true,
@@ -571,11 +669,66 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const color = this.getEmotionColor(emotion.emotion);
     const density = this.calculateDensity(emotion, allEmotions.length ? allEmotions : [emotion], 6000);
     
-    const geometry = new THREE.SphereGeometry(initialSize, 32, 32);
+    const geometry = new THREE.SphereGeometry(initialSize, 64, 64); // Increased segments for smoother noise displacement
+    const profile = emotionDistortionProfiles[emotion.emotion] || { amplitude: 0.1, frequency: 0.001, speed: 1.0, pulseAmplitude: 0.05, pulseSpeed: 1.0, shapeType: 0.0 };
+    const uniforms = {
+      uTime: { value: Math.random() * 100 }, // Random start time
+      uAmplitude: { value: profile.amplitude },
+      uFrequency: { value: profile.frequency },
+      uSpeed: { value: profile.speed },
+      uPulseAmplitude: { value: profile.pulseAmplitude },
+      uPulseSpeed: { value: profile.pulseSpeed },
+      uShapeType: { value: profile.shapeType }
+    };
+
+    const setupShader = (shader: any) => {
+      shader.uniforms.uTime = uniforms.uTime;
+      shader.uniforms.uAmplitude = uniforms.uAmplitude;
+      shader.uniforms.uFrequency = uniforms.uFrequency;
+      shader.uniforms.uSpeed = uniforms.uSpeed;
+      shader.uniforms.uPulseAmplitude = uniforms.uPulseAmplitude;
+      shader.uniforms.uPulseSpeed = uniforms.uPulseSpeed;
+      shader.uniforms.uShapeType = uniforms.uShapeType;
+      
+      shader.vertexShader = `
+        uniform float uTime;
+        uniform float uAmplitude;
+        uniform float uFrequency;
+        uniform float uSpeed;
+        uniform float uPulseAmplitude;
+        uniform float uPulseSpeed;
+        uniform float uShapeType;
+        
+        ${simplexNoise3D}
+      ` + shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        vec3 displacedPos = position;
+        float noise = snoise(vec3(position * uFrequency + uTime * uSpeed));
+        
+        if (uShapeType > 1.5) {
+            // Type 2: Ridged
+            noise = 1.0 - abs(noise);
+            noise = pow(noise, 2.0);
+        } else if (uShapeType > 0.5) {
+            // Type 1: Spiky / Chaotic
+            float noise2 = snoise(vec3(position * uFrequency * 2.0 + uTime * uSpeed * 1.5));
+            noise = noise + (noise2 * 0.7); // Add a second octave of noise for jagged spikes
+        }
+        
+        float pulse = sin(uTime * uPulseSpeed) * uPulseAmplitude;
+        displacedPos += normal * (noise * uAmplitude + pulse) * length(position);
+        vec3 transformed = displacedPos;
+        `
+      );
+    };
+
     const material = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 1 });
+    material.onBeforeCompile = setupShader;
     const sphere = new THREE.Mesh(geometry, material);
 
     const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
+    solidMaterial.onBeforeCompile = setupShader;
     const solidSphere = new THREE.Mesh(geometry, solidMaterial);
     solidSphere.userData = { isSolidChild: true, framesAlive: 0 };
     sphere.add(solidSphere);
@@ -591,6 +744,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     sphere.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     
     sphere.userData = {
+      shaderUniforms: uniforms,
       animationParams: {
         speed: Math.random() * 0.005 + 0.001,
         amplitudeX: Math.random() * 50 + 10,
@@ -957,6 +1111,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         sphere.rotation.x += spinParams.spinX || 0.01;
         sphere.rotation.y += spinParams.spinY || 0.01;
         sphere.rotation.z += spinParams.spinZ || 0;
+      }
+      
+      const uniforms = sphere.userData['shaderUniforms'];
+      if (uniforms) {
+        uniforms.uTime.value += 0.02; 
       }
 
       // Update sphere size based on elapsed time (older = smaller)
