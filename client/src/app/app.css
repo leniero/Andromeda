@@ -137,6 +137,16 @@ main.main.route-overlay-center > * {
   }
 }
 
+/* Force centered layouts for portrait mode on tablets/desktops (e.g. vertical iPads) */
+@media (min-width: 769px) and (orientation: portrait) {
+  main.main.route-overlay-left,
+  main.main.route-overlay-right {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .controls-overlay-left {
   position: absolute;
   top: calc(7.5rem + env(safe-area-inset-top, 0px));
