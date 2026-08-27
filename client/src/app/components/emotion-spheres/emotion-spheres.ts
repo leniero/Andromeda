@@ -1002,6 +1002,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           });
         } else {
           // Selected: Align perfectly parallel to the camera plane without mirroring
+          const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
+          textGroup.up.copy(cameraUp);
+          
           const camToTarget = new THREE.Vector3().subVectors(this.camera.position, this.orbitControls.target);
           const lookTarget = textGroup.position.clone().add(camToTarget);
           textGroup.lookAt(lookTarget);
