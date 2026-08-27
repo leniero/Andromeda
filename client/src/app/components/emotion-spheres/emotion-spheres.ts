@@ -381,11 +381,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       let zoomDistance = finalSize * 3.8;
       
       if (isMobile) {
-        upOffsetAmount = -finalSize * 0.8; 
+        upOffsetAmount = -finalSize * 1.0; 
         zoomDistance = finalSize * 6.5; 
       } else {
-        rightOffsetAmount = finalSize * 1.3; // Less offset on desktop to give more space on left
-        zoomDistance = finalSize * 4.5;
+        rightOffsetAmount = finalSize * 0.8; 
+        zoomDistance = finalSize * 5.0;
       }
       
       this.targetOrbitCenter.copy(worldPos)
@@ -692,8 +692,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (currentLine.length > 0) lines.push({ meshes: currentLine, width: currentLineWidth });
     
     let unscaledMaxLineWidth = 0;
+    const charSpacing = sphereRadius * 0.012;
     lines.forEach(l => {
-       const w = l.width + (l.meshes.length - 1) * (sphereRadius * 0.006);
+       const w = l.width + (l.meshes.length - 1) * charSpacing;
        if (w > unscaledMaxLineWidth) unscaledMaxLineWidth = w;
     });
     
@@ -716,9 +717,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     let startY = 0;
     if (isMobile) {
-        startY = -sphereRadius * 0.9; 
+        startY = -sphereRadius * 1.6; 
     } else {
-        startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2);
+        startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2) - (sphereRadius * 0.4);
     }
     
     textGroup.userData['layoutTopY'] = startY;
@@ -726,7 +727,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     textGroup.userData['textScale'] = textScale;
     
     lines.forEach((line) => {
-       const lineUnscaledWidth = line.width + (line.meshes.length - 1) * (sphereRadius * 0.006);
+       const lineUnscaledWidth = line.width + (line.meshes.length - 1) * charSpacing;
        const lineScaledWidth = lineUnscaledWidth * textScale;
        const centerX = isMobile ? 0 : sphereRadius * 0.9 + finalScaledWidth / 2;
        let xOffset = centerX - lineScaledWidth / 2; 
@@ -740,7 +741,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
            m.mesh.userData['targetRot'] = new THREE.Euler().setFromQuaternion(invQuat);
            m.mesh.userData['targetScale'] = textScale;
            
-           xOffset += (m.width + sphereRadius * 0.006) * textScale; 
+           xOffset += (m.width + charSpacing) * textScale; 
        });
        startY -= flatLineHeight;
     });
@@ -1065,7 +1066,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
              
              header.position.set(headerX, topY + (1300 * tScale), 0);
-             footer.position.set(footerX, bottomY - (600 * tScale), 0);
+             footer.position.set(footerX, bottomY - (300 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;
