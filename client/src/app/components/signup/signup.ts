@@ -37,6 +37,7 @@ export class SignupComponent {
         next: (res) => {
           this.message = res.message;
           this.isSubmitting = false;
+          setTimeout(() => this.router.navigate(['/login']), 1500);
         },
         error: (err) => {
           this.error = err.error?.message || err.error?.error || 'Signup failed';

@@ -37,37 +37,16 @@ exports.signup = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    // Token expires in 24 hours
-    const verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
-
     const newUser = new User({ 
       username, 
       email, 
       password: hashedPassword,
-      verificationToken,
-      verificationTokenExpires
+      isVerified: true
     });
     
     await newUser.save();
 
-    // Send verification email
-    const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:4200'}/verify-email/${verificationToken}`;
-    const emailHtml = `
-      <h2>Welcome to Andromeda, ${username}!</h2>
-      <p>Please verify your email address by clicking the link below:</p>
-      <a href="${verifyUrl}" style="background: #9333ea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Verify Email</a>
-      <p>If you did not create this account, you can safely ignore this email.</p>
-    `;
-
-    await sendEmail({
-      to: newUser.email,
-      subject: 'Verify your Andromeda account',
-      html: emailHtml
-    });
-
-    res.status(201).json({ message: 'User created successfully. Please check your email to verify your account.' });
+    res.status(201).json({ message: 'Account created successfully! You can now log in.' });
   } catch (error) {
     console.error('Error during signup:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -88,9 +67,6 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
 
-    if (!user.isVerified) {
-      return res.status(401).json({ message: 'Please verify your email before logging in.', error: 'UNVERIFIED_EMAIL' });
-    }
 
     const payload = {
       _id: user.id
