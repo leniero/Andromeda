@@ -636,7 +636,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
   private calculateTargetLayout(textGroup: THREE.Group, sphereRadius: number) {
     const isMobile = window.innerWidth <= 768;
-    const textScale = 0.35; 
+    const textScale = 0.45; 
     
     const meshes: { mesh: THREE.Mesh, char: string, width: number, parentQuat: THREE.Quaternion }[] = [];
     textGroup.children.forEach(zRotGrp => {
@@ -651,7 +651,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
        }
     });
 
-    const flatMaxWidth = isMobile ? sphereRadius * 5.0 : sphereRadius * 4.0;
+    const flatMaxWidth = isMobile ? sphereRadius * 4.0 : sphereRadius * 3.0;
     const flatLineHeight = sphereRadius * 0.4 * textScale;
     
     const words: { meshes: any[], width: number }[] = [];
@@ -691,7 +691,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     let maxLineWidth = 0;
     lines.forEach(l => {
-       const lineScaledWidth = l.width * textScale + (l.meshes.length - 1) * (sphereRadius * 0.02 * textScale);
+       const lineScaledWidth = l.width * textScale + (l.meshes.length - 1) * (sphereRadius * 0.006 * textScale);
        if (lineScaledWidth > maxLineWidth) maxLineWidth = lineScaledWidth;
     });
     
@@ -712,7 +712,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
            m.mesh.userData['targetRot'] = new THREE.Euler().setFromQuaternion(invQuat);
            m.mesh.userData['targetScale'] = textScale;
            
-           xOffset += (m.width + sphereRadius * 0.02) * textScale; 
+           xOffset += (m.width + sphereRadius * 0.006) * textScale; 
        });
        startY -= flatLineHeight;
     });
@@ -769,7 +769,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
         charGeometry.computeBoundingBox();
         let charWidth = charGeometry.boundingBox!.max.x - charGeometry.boundingBox!.min.x;
-        if (charStr === ' ') charWidth = sphereRadius * 0.15; 
+        if (charStr === ' ') charWidth = sphereRadius * 0.08; 
 
         const charMaterial = new THREE.MeshBasicMaterial({ color: this.isLightMode ? 0x1f2937 : 0xffffff });
         const charMesh = new THREE.Mesh(charGeometry, charMaterial);
