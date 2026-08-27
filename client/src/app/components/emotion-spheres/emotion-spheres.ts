@@ -114,7 +114,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // High-DPI Canvas for sharp text
     const scaleFactor = 4;
     
-    const emojiFont = `${160 * scaleFactor}px sans-serif`;
+    const emojiFont = `${220 * scaleFactor}px sans-serif`;
     const titleFont = `bold ${160 * scaleFactor}px "SF Pro Display", sans-serif`;
     
     context.font = emojiFont;
@@ -692,13 +692,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (currentLine.length > 0) lines.push({ meshes: currentLine, width: currentLineWidth });
     
     let unscaledMaxLineWidth = 0;
-    const charSpacing = sphereRadius * 0.012;
+    const charSpacing = sphereRadius * 0.020;
     lines.forEach(l => {
        const w = l.width + (l.meshes.length - 1) * charSpacing;
        if (w > unscaledMaxLineWidth) unscaledMaxLineWidth = w;
     });
     
-    const unscaledHeight = lines.length * (sphereRadius * 0.4);
+    const unscaledHeight = lines.length * (sphereRadius * 0.35);
     
     const maxAllowedWidth = isMobile ? sphereRadius * 3.5 : sphereRadius * 2.2;
     const maxAllowedHeight = isMobile ? sphereRadius * 4.0 : sphereRadius * 2.8;
@@ -710,14 +710,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         textScale = Math.min(textScale, maxAllowedHeight / unscaledHeight);
     }
     
-    textScale = Math.min(textScale, 0.9);
+    textScale = Math.min(textScale, 0.7);
     
-    const flatLineHeight = sphereRadius * 0.4 * textScale;
+    const flatLineHeight = sphereRadius * 0.35 * textScale;
     const finalScaledWidth = unscaledMaxLineWidth * textScale;
     
     let startY = 0;
     if (isMobile) {
-        startY = -sphereRadius * 1.6; 
+        startY = -sphereRadius * 1.8; 
     } else {
         startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2) - (sphereRadius * 0.4);
     }
@@ -729,7 +729,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     lines.forEach((line) => {
        const lineUnscaledWidth = line.width + (line.meshes.length - 1) * charSpacing;
        const lineScaledWidth = lineUnscaledWidth * textScale;
-       const centerX = isMobile ? 0 : sphereRadius * 0.9 + finalScaledWidth / 2;
+       const centerX = isMobile ? 0 : sphereRadius * 1.1 + finalScaledWidth / 2;
        let xOffset = centerX - lineScaledWidth / 2; 
        line.meshes.forEach(m => {
            const targetGlobal = new THREE.Vector3(xOffset, startY, 0);
@@ -1057,7 +1057,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const headerLogicalHeight = header.userData['logicalHeight'] || 480;
              
              const maxLineWidth = textGroup.userData['maxLineWidth'] || 0;
-             const centerX = isMobile ? 0 : (2000 * 0.9) + maxLineWidth / 2; // maxSize is 2000
+             const centerX = isMobile ? 0 : (2000 * 1.1) + maxLineWidth / 2; // maxSize is 2000
              
              const headerX = centerX;
              const footerX = centerX;
@@ -1066,7 +1066,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
              
              header.position.set(headerX, topY + (1300 * tScale), 0);
-             footer.position.set(footerX, bottomY - (300 * tScale), 0);
+             footer.position.set(footerX, bottomY - (150 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;
