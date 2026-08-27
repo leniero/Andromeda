@@ -713,13 +713,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     let startY = 0;
     if (isMobile) {
-        startY = -sphereRadius * 1.1; 
+        startY = -sphereRadius * 0.9; 
     } else {
         startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2);
     }
     
     textGroup.userData['layoutTopY'] = startY;
     textGroup.userData['maxLineWidth'] = finalScaledWidth;
+    textGroup.userData['textScale'] = textScale;
     
     lines.forEach((line) => {
        let xOffset = isMobile ? -finalScaledWidth / 2 : sphereRadius * 1.2; 
@@ -970,10 +971,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       if (sphere) {
         textGroup.position.copy(sphere.position);
 
-        // Ensure text group always faces the camera exactly without rolling
-        textGroup.lookAt(this.camera.position);
-
         if (!isSelected) {
+          // Unselected: Normal spherical halo lookAt
+          textGroup.lookAt(this.camera.position);
+
           textGroup.userData['morphProgress'] = 0;
           textGroup.userData['targetCalculated'] = false;
 
@@ -994,6 +995,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             }
           });
         } else {
+          // Selected: Align perfectly parallel to the camera plane without mirroring
+          const camToTarget = new THREE.Vector3().subVectors(this.camera.position, this.orbitControls.target);
+          const lookTarget = textGroup.position.clone().add(camToTarget);
+          textGroup.lookAt(lookTarget);
+
           if (!textGroup.userData['targetCalculated']) {
             this.calculateTargetLayout(textGroup, 2000); // maxSize is 2000
             textGroup.userData['targetCalculated'] = true;
@@ -1037,6 +1043,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           if (header && footer) {
              const topY = textGroup.userData['layoutTopY'] || 0;
              const bottomY = textGroup.userData['layoutBottomY'] || 0;
+             const tScale = textGroup.userData['textScale'] || 1.0;
              
              // Offset Sprites above and below the paragraph
              const isMobile = window.innerWidth <= 768;
@@ -1047,11 +1054,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              // textGroup.userData['maxLineWidth'] handles the block width
              const textXOffset = isMobile ? -(textGroup.userData['maxLineWidth'] || 0) / 2 : (maxSize * 1.2);
              
-             const headerX = isMobile ? 0 : textXOffset + (headerLogicalWidth / 2); 
-             const footerX = isMobile ? 0 : textXOffset + (footerLogicalWidth / 2);
+             const headerX = isMobile ? 0 : textXOffset + (headerLogicalWidth * tScale / 2); 
+             const footerX = isMobile ? 0 : textXOffset + (footerLogicalWidth * tScale / 2);
              
-             header.position.set(headerX, topY + 700, 0);
-             footer.position.set(footerX, bottomY - 600, 0);
+             header.scale.set(headerLogicalWidth * tScale, 480 * tScale, 1);
+             footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
+             
+             header.position.set(headerX, topY + (350 * tScale), 0);
+             footer.position.set(footerX, bottomY - (300 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;
