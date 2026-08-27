@@ -121,6 +121,17 @@ input::placeholder, textarea::placeholder {
   color: var(--text-tertiary);
 }
 
+/* Override Safari's yellow autofill background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px var(--input-bg-solid) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary);
+  border-radius: 9999px;
+}
+
 a {
   text-decoration: none;
   color: inherit;
