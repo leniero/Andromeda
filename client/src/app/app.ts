@@ -125,4 +125,10 @@ export class App implements OnInit {
   dismissOverlay() {
     this.router.navigate(['/home']);
   }
+
+  onMainClick(event: Event) {
+    if (event.target === event.currentTarget && (this.isListRoute || this.isAccountRoute || this.isAuthRoute || this.isWelcomeRoute)) {
+      this.dismissOverlay();
+    }
+  }
 }

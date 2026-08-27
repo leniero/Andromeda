@@ -96,6 +96,7 @@ main.main.route-overlay-center > * {
     padding-top: 0; /* component handles its own top padding */
     overflow-y: auto;
     overflow-x: hidden;
+    pointer-events: auto; /* enable touch scroll on iPad */
     /* Hide scrollbar */
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -111,10 +112,22 @@ main.main.route-overlay-center > * {
     padding-top: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    pointer-events: auto; /* enable touch scroll on iPad */
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
   main.main.route-overlay-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  main.main.route-overlay-center {
+    overflow-y: auto;
+    overflow-x: hidden;
+    pointer-events: auto; /* enable touch scroll on iPad */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  main.main.route-overlay-center::-webkit-scrollbar {
     display: none;
   }
 
