@@ -636,7 +636,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
   private calculateTargetLayout(textGroup: THREE.Group, sphereRadius: number) {
     const isMobile = window.innerWidth <= 768;
-    const textScale = 0.45; 
+    let textScale = 0.75; 
     
     const meshes: { mesh: THREE.Mesh, char: string, width: number, parentQuat: THREE.Quaternion }[] = [];
     textGroup.children.forEach(zRotGrp => {
@@ -651,8 +651,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
        }
     });
 
-    const flatMaxWidth = isMobile ? sphereRadius * 4.0 : sphereRadius * 3.0;
-    const flatLineHeight = sphereRadius * 0.4 * textScale;
+    const wrapWidthUnscaled = isMobile ? sphereRadius * 3.5 : sphereRadius * 2.5;
     
     const words: { meshes: any[], width: number }[] = [];
     let currentWord: any[] = [];
@@ -678,7 +677,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     let currentLineWidth = 0;
     
     words.forEach(w => {
-       if (currentLineWidth + w.width > flatMaxWidth && currentLine.length > 0) {
+       if (currentLineWidth + w.width > wrapWidthUnscaled && currentLine.length > 0) {
            lines.push({ meshes: currentLine, width: currentLineWidth });
            currentLine = w.meshes;
            currentLineWidth = w.width;
@@ -689,18 +688,41 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     });
     if (currentLine.length > 0) lines.push({ meshes: currentLine, width: currentLineWidth });
     
-    let maxLineWidth = 0;
+    let unscaledMaxLineWidth = 0;
     lines.forEach(l => {
-       const lineScaledWidth = l.width * textScale + (l.meshes.length - 1) * (sphereRadius * 0.006 * textScale);
-       if (lineScaledWidth > maxLineWidth) maxLineWidth = lineScaledWidth;
+       const w = l.width + (l.meshes.length - 1) * (sphereRadius * 0.006);
+       if (w > unscaledMaxLineWidth) unscaledMaxLineWidth = w;
     });
     
-    let startY = isMobile ? -sphereRadius * 1.8 : (lines.length * flatLineHeight) / 2; 
+    const unscaledHeight = lines.length * (sphereRadius * 0.4);
+    
+    const maxAllowedWidth = isMobile ? sphereRadius * 3.5 : sphereRadius * 2.8;
+    const maxAllowedHeight = isMobile ? sphereRadius * 4.0 : sphereRadius * 2.8;
+    
+    if (unscaledMaxLineWidth > 0 && unscaledMaxLineWidth * textScale > maxAllowedWidth) {
+        textScale = maxAllowedWidth / unscaledMaxLineWidth;
+    }
+    if (unscaledHeight > 0 && unscaledHeight * textScale > maxAllowedHeight) {
+        textScale = Math.min(textScale, maxAllowedHeight / unscaledHeight);
+    }
+    
+    textScale = Math.min(textScale, 0.9);
+    
+    const flatLineHeight = sphereRadius * 0.4 * textScale;
+    const finalScaledWidth = unscaledMaxLineWidth * textScale;
+    
+    let startY = 0;
+    if (isMobile) {
+        startY = -sphereRadius * 1.1; 
+    } else {
+        startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2);
+    }
+    
     textGroup.userData['layoutTopY'] = startY;
-    textGroup.userData['maxLineWidth'] = maxLineWidth;
+    textGroup.userData['maxLineWidth'] = finalScaledWidth;
     
     lines.forEach((line) => {
-       let xOffset = isMobile ? -maxLineWidth / 2 : sphereRadius * 1.2; 
+       let xOffset = isMobile ? -finalScaledWidth / 2 : sphereRadius * 1.2; 
        
        line.meshes.forEach(m => {
            const targetGlobal = new THREE.Vector3(xOffset, startY, 0);
