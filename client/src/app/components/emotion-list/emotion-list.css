@@ -42,15 +42,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   flex-shrink: 0;
 }
 
 .orbit-container {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,8 +89,8 @@
 }
 
 .circle {
-  width: 45px;
-  height: 45px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -100,8 +100,8 @@
 }
 
 .emoji {
-  font-size: 1.5em;
-  line-height: 45px;
+  font-size: 1.8em;
+  line-height: 56px;
   vertical-align: middle;
   text-align: center;
   display: inline-block;
@@ -110,7 +110,7 @@
 
 .textContainer {
   display: flex;
-  margin-right: -40px;
+  margin-right: -50px;
   flex-direction: column;
   flex: 1;
   position: relative;
@@ -120,10 +120,10 @@
 .text {
   font-size: 0.9em;
   background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
   border: 1px solid var(--glass-border);
-  padding: 12px 56px 12px 20px;
+  padding: 16px 70px 16px 20px;
   border-radius: 20px;
   text-align: left;
   width: 100%;
@@ -136,12 +136,32 @@
 .meta-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   width: 100%;
 }
 
 .delete-confirm {
   margin-top: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: center;
+  width: 220px;
+  margin-left: auto;
+}
+
+.delete-warning-text {
+  color: #ff6b6b;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.delete-confirm button {
+  padding: 8px 12px;
+  font-size: 0.9em;
 }
 
 .date-group {
@@ -151,7 +171,7 @@
 }
 
 .date {
-  font-size: 0.8em;
+  font-size: 0.75em;
   color: var(--text-tertiary);
   display: flex;
   align-items: center;
@@ -162,7 +182,7 @@
 .privacy-badge {
   padding: 2px 8px;
   border-radius: 12px;
-  font-size: 0.7em;
+  font-size: 0.65em;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -185,13 +205,13 @@
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: 0;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1rem;
   line-height: 1;
   font-weight: 800;
   transform: rotate(45deg);
@@ -210,11 +230,11 @@
 
 .myEmotion .textContainer {
   margin-right: 0;
-  margin-left: -40px;
+  margin-left: -50px;
 }
 
 .myEmotion .text {
-  padding: 12px 20px 12px 56px;
+  padding: 16px 20px 16px 70px;
   border-radius: 20px;
   /* Removed mask-image — breaks backdrop-filter in WebKit */
 }
@@ -241,15 +261,11 @@
     gap: 0px;
   }
   .text {
-    padding: 12px;
+    padding: 16px 70px 16px 16px;
     font-size: 0.85em;
   }
-  .date {
-    font-size: 0.65em;
-  }
-  .privacy-badge {
-    font-size: 0.6em;
-    padding: 2px 6px;
+  .myEmotion .text {
+    padding: 16px 16px 16px 70px;
   }
   .delete-confirm button {
     padding: 6px 8px;
@@ -263,4 +279,27 @@
        Add top padding equal to the semicircle navbar height + gap */
     padding-top: 7rem;
   }
+}
+
+:host-context([data-theme='dark']) .text {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+:host-context([data-theme='light']) .text {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+:host-context([data-theme='light']) .orbit-text {
+  fill: #000000 !important;
+  opacity: 1 !important;
+}
+
+:host-context([data-theme='light']) .delete-confirm {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+}
+
+:host-context([data-theme='light']) .delete-warning-text {
+  color: #dc2626;
 }

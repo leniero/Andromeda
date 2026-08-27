@@ -28,7 +28,7 @@
     --text-secondary: rgba(0, 0, 0, 0.5);
     --text-tertiary: rgba(0, 0, 0, 0.4);
     --glass-bg: rgba(255, 255, 255, 0.55);
-    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-border: rgba(0, 0, 0, 0.25);
     --nav-bg: rgba(255, 255, 255, 0.8);
     --input-bg: rgba(0, 0, 0, 0.05);
     --input-bg-solid: rgba(248, 250, 252, 0.98);
@@ -50,7 +50,7 @@ html[data-theme='light'] {
   --text-secondary: rgba(0, 0, 0, 0.5);
   --text-tertiary: rgba(0, 0, 0, 0.4);
   --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-border: rgba(0, 0, 0, 0.25);
   --nav-bg: rgba(255, 255, 255, 0.8);
   --input-bg: rgba(0, 0, 0, 0.05);
   --input-bg-solid: rgba(248, 250, 252, 0.98);

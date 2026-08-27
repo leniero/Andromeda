@@ -39,7 +39,7 @@ export class SignupComponent {
           this.isSubmitting = false;
         },
         error: (err) => {
-          this.error = err.error?.error || 'Signup failed';
+          this.error = err.error?.message || err.error?.error || 'Signup failed';
           this.isSubmitting = false;
         }
       });

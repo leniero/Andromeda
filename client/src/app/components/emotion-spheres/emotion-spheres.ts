@@ -114,8 +114,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // High-DPI Canvas for sharp text
     const scaleFactor = 4;
     
-    const emojiFont = `${220 * scaleFactor}px sans-serif`;
-    const titleFont = `bold ${160 * scaleFactor}px "SF Pro Display", sans-serif`;
+    const emojiFont = `${300 * scaleFactor}px sans-serif`;
+    const titleFont = `bold ${220 * scaleFactor}px "SF Pro Display", sans-serif`;
     
     context.font = emojiFont;
     const emojiWidth = context.measureText(emoji).width;
@@ -124,7 +124,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const titleWidth = context.measureText(titleText).width;
     
     const logicalWidth = Math.max(emojiWidth, titleWidth) / scaleFactor + 80;
-    const logicalHeight = 500;
+    const logicalHeight = 650;
     
     canvas.width = logicalWidth * scaleFactor;
     canvas.height = logicalHeight * scaleFactor;
@@ -135,11 +135,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const centerX = canvas.width / 2;
     
     context.font = emojiFont;
-    context.fillText(emoji, centerX, 180 * scaleFactor);
+    context.fillText(emoji, centerX, 240 * scaleFactor);
     
     context.font = titleFont;
-    context.fillStyle = this.isLightMode ? 'rgba(31, 41, 55, 0.6)' : 'rgba(255, 255, 255, 0.6)';
-    context.fillText(titleText, centerX, 380 * scaleFactor);
+    context.fillStyle = this.isLightMode ? 'rgba(31, 41, 55, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+    context.fillText(titleText, centerX, 520 * scaleFactor);
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.generateMipmaps = true;
@@ -158,14 +158,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const context = canvas.getContext('2d')!;
     
     const scaleFactor = 4;
-    const font = `${75 * scaleFactor}px monospace`; // slightly smaller font
+    const font = `${130 * scaleFactor}px monospace`; // slightly smaller font
     context.font = font;
     
     const text = `${username || 'Anonymous'}  ${date}  ${distance !== null ? distance.toFixed(0) + 'km away' : ''}`;
     const textWidth = context.measureText(text).width;
     
     const logicalWidth = textWidth / scaleFactor + 60;
-    const logicalHeight = 140;
+    const logicalHeight = 220;
     
     canvas.width = logicalWidth * scaleFactor;
     canvas.height = logicalHeight * scaleFactor;
@@ -183,6 +183,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(logicalWidth * 2, logicalHeight * 2, 1);
     sprite.userData['logicalWidth'] = logicalWidth * 2;
+    sprite.userData['logicalHeight'] = logicalHeight * 2;
     return sprite;
   }
 
@@ -692,7 +693,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (currentLine.length > 0) lines.push({ meshes: currentLine, width: currentLineWidth });
     
     let unscaledMaxLineWidth = 0;
-    const charSpacing = sphereRadius * 0.020;
+    const charSpacing = sphereRadius * 0.035;
     lines.forEach(l => {
        const w = l.width + (l.meshes.length - 1) * charSpacing;
        if (w > unscaledMaxLineWidth) unscaledMaxLineWidth = w;
@@ -710,14 +711,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         textScale = Math.min(textScale, maxAllowedHeight / unscaledHeight);
     }
     
-    textScale = Math.min(textScale, 0.6);
+    textScale = Math.min(textScale, 0.5);
     
     const flatLineHeight = sphereRadius * 0.35 * textScale;
     const finalScaledWidth = unscaledMaxLineWidth * textScale;
     
     let startY = 0;
     if (isMobile) {
-        startY = -sphereRadius * 1.8; 
+        startY = -sphereRadius * 1.9; 
     } else {
         startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2) - (sphereRadius * 0.4);
     }
@@ -734,7 +735,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
        line.meshes.forEach(m => {
            const targetGlobal = new THREE.Vector3(xOffset, startY, 0);
            
-           const invQuat = m.parentQuat.clone().invert();
+           const invQuat = m.mesh.parent!.quaternion.clone().invert();
            const targetLocal = targetGlobal.clone().applyQuaternion(invQuat);
            
            m.mesh.userData['targetPos'] = targetLocal;
@@ -1057,6 +1058,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
              const headerLogicalWidth = header.userData['logicalWidth'];
              const footerLogicalWidth = footer.userData['logicalWidth'];
+             const footerLogicalHeight = footer.userData['logicalHeight'] || 280;
              const headerLogicalHeight = header.userData['logicalHeight'] || 480;
              
              const maxLineWidth = textGroup.userData['maxLineWidth'] || 0;
@@ -1066,10 +1068,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const footerX = centerX;
              
              header.scale.set(headerLogicalWidth * tScale, headerLogicalHeight * tScale, 1);
-             footer.scale.set(footerLogicalWidth * tScale, 280 * tScale, 1);
+             footer.scale.set(footerLogicalWidth * tScale, footerLogicalHeight * tScale, 1);
              
-             header.position.set(headerX, topY + (1300 * tScale), 0);
-             footer.position.set(footerX, bottomY - (100 * tScale), 0);
+             header.position.set(headerX, topY + (1600 * tScale), 0);
+             footer.position.set(footerX, bottomY - (50 * tScale), 0);
              
              header.material.opacity = p;
              footer.material.opacity = p;

@@ -65,6 +65,8 @@ main.main.route-overlay-center > * {
   pointer-events: auto;
 }
 
+
+
 /* Mobile: when overlay is active, make main a block scroll container */
 @media (max-width: 768px) {
   main.main.overlay-active {
@@ -100,6 +102,8 @@ main.main.route-overlay-center > * {
     /* Hide scrollbar */
     -ms-overflow-style: none;
     scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, black 30%, black 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, black 30%, black 100%);
   }
   main.main.route-overlay-left::-webkit-scrollbar {
     display: none;

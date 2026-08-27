@@ -17,10 +17,10 @@
             <span class="text">"{{ emotion.text_input }}"</span>
             <div class="hanging-container">
               <div class="meta-row">
-                <span class="privacy-badge" [class.public]="emotion.isPublic !== false" [class.private]="emotion.isPublic === false">
-                  {{ emotion.isPublic !== false ? 'Public' : 'Private' }}
-                </span>
                 <div class="date-group">
+                  <span class="privacy-badge" [class.public]="emotion.isPublic !== false" [class.private]="emotion.isPublic === false">
+                    {{ emotion.isPublic !== false ? 'Public' : 'Private' }}
+                  </span>
                   <span class="date">
                     {{ formatDate(emotion.local_time) }}
                     <span *ngIf="emotion.distance !== undefined"> • {{ emotion.distance.toFixed(0) }}km away</span>
@@ -28,8 +28,8 @@
                   <button [style.visibility]="deletingId === emotion._id ? 'hidden' : 'visible'" class="btn-delete" (click)="confirmDelete(emotion._id)" title="Delete Entry"><div class="icon-plus"></div></button>
                 </div>
               </div>
-              <div class="delete-confirm" *ngIf="deletingId === emotion._id" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 14px; padding: 10px; margin-top: 5px; text-align: center; width: 220px; margin-left: auto;">
-                <p style="color: #ff6b6b; margin-top: 0; margin-bottom: 10px; font-weight: bold; font-size: 0.9em;">Delete this entry?</p>
+              <div class="delete-confirm" *ngIf="deletingId === emotion._id">
+                <p class="delete-warning-text">Delete this entry?</p>
                 <div style="display: flex; gap: 8px;">
                   <button class="btn-secondary" style="flex: 1;" (click)="cancelDelete()">Cancel</button>
                   <button class="btn-danger" style="flex: 1;" (click)="deleteEntry(emotion._id)">Delete</button>

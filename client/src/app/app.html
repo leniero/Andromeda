@@ -37,6 +37,6 @@
 </div>
 
 <app-navbar *ngIf="!isWelcomeRoute"></app-navbar>
-<main class="main" [class.route-overlay-left]="isListRoute" [class.route-overlay-right]="isAccountRoute || isAuthRoute" [class.route-overlay-center]="isWelcomeRoute" [class.overlay-active]="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute" (click)="onMainClick($event)">
+<main class="main" [class.route-overlay-left]="isListRoute" [class.route-overlay-center]="isWelcomeRoute || isAccountRoute || isAuthRoute" [class.overlay-active]="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute" (click)="onMainClick($event)">
   <router-outlet></router-outlet>
 </main>

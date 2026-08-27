@@ -28,9 +28,12 @@ exports.signup = async (req, res) => {
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists' });
+      if (existingUser.email === email) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+      return res.status(409).json({ message: 'Username is already taken' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     
