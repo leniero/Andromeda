@@ -181,6 +181,11 @@
     justify-content: center;
   }
 
+  .icon-list-bullet, .icon-person-circle {
+    width: 30px;
+    height: 30px;
+  }
+
   .nav-links {
     display: contents;
   }
