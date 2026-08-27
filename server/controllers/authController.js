@@ -57,7 +57,10 @@ exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    // Allow login with either email or username
+    const user = await User.findOne({
+      $or: [{ email: email }, { username: email }]
+    });
     if (!user) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
