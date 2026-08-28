@@ -1004,7 +1004,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         totalWidth += charWidth;
       }
 
-      let spacingMultiplier = 1.25; // Base padding multiplier
+      let spacingMultiplier = 1.45; // Base padding multiplier
       const totalAngleNeeded = (totalWidth / currentRadius) * spacingMultiplier;
       
       // If it exceeds 360 degrees (2 PI), we squash the spacing so it fits
@@ -1270,9 +1270,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             textGroup.userData['targetCalculated'] = true;
           }
 
+          const maxP = (textGroup.children.length * 0.01) + 1.0;
           let p = textGroup.userData['morphProgress'] || 0;
           p += 0.02; // Global animation speed
-          if (p > 1.5) p = 1.5; 
+          if (p > maxP) p = maxP; 
           textGroup.userData['morphProgress'] = p;
 
           textGroup.children.forEach((zRotationGroup, i) => {
