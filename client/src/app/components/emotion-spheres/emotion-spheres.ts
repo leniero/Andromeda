@@ -1,3 +1,4 @@
+import { AuthService } from "../../services/auth";
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, AfterViewInit, inject, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
@@ -132,6 +133,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private camera!: THREE.PerspectiveCamera;
   private bgRenderer!: THREE.WebGLRenderer;
   private fgRenderer!: THREE.WebGLRenderer;
+  private orbitControls!: OrbitControls;
+  
+  private zoomDirection = new THREE.Vector3();
   private animationFrameId!: number;
   private spheres: THREE.Mesh[] = [];
   private textGroups: THREE.Group[] = [];
@@ -139,7 +143,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
   private hoveredEmotionId: string | null = null;
-  private orbitControls!: OrbitControls;
   
   private lodGeometries = {
     high: new THREE.SphereGeometry(2000, 64, 64),
@@ -213,7 +216,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     Satisfaction: '😊', Joy: '😆', Elation: '😌', Pride: '🥹'
   };
 
-  private createHeaderSprite(emotion: string, emoji: string): THREE.Sprite {
+  private getEmotionEmoji(emotion: string): string {
+    return this.emotionEmojis[emotion] || '😶';
+  }
+
+  private createHeaderSprite(emotion: string, emoji: string, colorHex: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d')!;
     
@@ -226,11 +233,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     context.font = emojiFont;
     const emojiWidth = context.measureText(emoji).width;
     context.font = titleFont;
-    const titleText = emotion.toLowerCase();
+    const titleText = emotion.toUpperCase();
     const titleWidth = context.measureText(titleText).width;
     
     const logicalWidth = Math.max(emojiWidth, titleWidth) / scaleFactor + 80;
-    const logicalHeight = 650;
+    const logicalHeight = 750;
     
     canvas.width = logicalWidth * scaleFactor;
     canvas.height = logicalHeight * scaleFactor;
@@ -241,21 +248,23 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const centerX = canvas.width / 2;
     
     context.font = emojiFont;
-    context.fillText(emoji, centerX, 240 * scaleFactor);
+    context.fillText(emoji, centerX, 200 * scaleFactor);
     
     context.font = titleFont;
-    context.fillStyle = this.isLightMode ? 'rgba(31, 41, 55, 0.4)' : 'rgba(255, 255, 255, 0.4)';
-    context.fillText(titleText, centerX, 520 * scaleFactor);
+    context.fillStyle = colorHex;
+    context.fillText(titleText, centerX, 580 * scaleFactor);
     
     const texture = new THREE.CanvasTexture(canvas);
-    texture.generateMipmaps = true;
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true, opacity: 0 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(logicalWidth * 2, logicalHeight * 2, 1);
-    // Save logical width for layout
-    sprite.userData['logicalWidth'] = logicalWidth * 2; 
-    sprite.userData['logicalHeight'] = logicalHeight * 2;
+    const spriteScale = 2.4; 
+    sprite.scale.set(logicalWidth * spriteScale, logicalHeight * spriteScale, 1);
+    sprite.userData['logicalWidth'] = logicalWidth * spriteScale; 
+    sprite.userData['logicalHeight'] = logicalHeight * spriteScale;
     return sprite;
   }
 
@@ -264,10 +273,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const context = canvas.getContext('2d')!;
     
     const scaleFactor = 4;
-    const font = `${130 * scaleFactor}px monospace`; // slightly smaller font
+    const font = `${140 * scaleFactor}px monospace`;
     context.font = font;
     
-    const text = `${username || 'Anonymous'}  ${date}  ${distance !== null ? distance.toFixed(0) + 'km away' : ''}`;
+    const displayName = username ? `@${username}` : '@anonymous';
+    const text = `${displayName} · ${date}${distance !== null ? ' · ' + distance.toFixed(0) + 'km' : ''}`;
     const textWidth = context.measureText(text).width;
     
     const logicalWidth = textWidth / scaleFactor + 60;
@@ -283,13 +293,16 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     context.fillText(text, canvas.width / 2, canvas.height / 2);
     
     const texture = new THREE.CanvasTexture(canvas);
-    texture.generateMipmaps = true;
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true, opacity: 0 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(logicalWidth * 2, logicalHeight * 2, 1);
-    sprite.userData['logicalWidth'] = logicalWidth * 2;
-    sprite.userData['logicalHeight'] = logicalHeight * 2;
+    const spriteScale = 2.5; 
+    sprite.scale.set(logicalWidth * spriteScale, logicalHeight * spriteScale, 1);
+    sprite.userData['logicalWidth'] = logicalWidth * spriteScale;
+    sprite.userData['logicalHeight'] = logicalHeight * spriteScale;
     return sprite;
   }
 
@@ -333,6 +346,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.updateThreeJsColors();
   }
 
+
+
   private updateThreeJsColors() {
     const textColor = this.isLightMode ? 0x1f2937 : 0xffffff;
     
@@ -349,18 +364,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
          const footer = tg.userData['footerSprite'];
          if (header && footer) {
            tg.remove(header);
+           tg.remove(footer);
            if (header.material.map) header.material.map.dispose();
            header.material.dispose();
-           tg.remove(footer);
            if (footer.material.map) footer.material.map.dispose();
            footer.material.dispose();
            
-           const emoji = this.emotionEmojis[this.selectedEmotion.emotion.emotion] || '😶';
-           const newHeader = this.createHeaderSprite(this.selectedEmotion.emotion.emotion, emoji);
-           const newFooter = this.createFooterSprite(this.selectedEmotion.emotion.username, this.formatDate(this.selectedEmotion.emotion.local_time), this.selectedEmotion.distance);
+           const emoji = this.getEmotionEmoji(this.selectedEmotion.emotion.emotion);
+           const colorHex = this.getEmotionColor(this.selectedEmotion.emotion.emotion);
+           const newHeader = this.createHeaderSprite(this.selectedEmotion.emotion.emotion, emoji, colorHex);
+           
+           const dist = this.selectedEmotion.distance !== undefined ? this.selectedEmotion.distance : null;
+           const newFooter = this.createFooterSprite(this.selectedEmotion.emotion.username, this.formatDate(this.selectedEmotion.emotion.local_time), dist);
            
            tg.add(newHeader);
            tg.add(newFooter);
+           
            tg.userData['headerSprite'] = newHeader;
            tg.userData['footerSprite'] = newFooter;
          }
@@ -442,6 +461,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.camera.updateProjectionMatrix();
     this.bgRenderer.setSize(width, height);
     this.fgRenderer.setSize(width, height);
+    if (this.selectedEmotion) {
+        const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
+        const tg = this.textGroups.find(t => t.userData['emotionId'] === this.selectedEmotion.emotion._id);
+        if (selectedSphere && tg) {
+            tg.userData['targetCalculated'] = false;
+            this.recalculateZoomLayout(selectedSphere, this.zoomDirection);
+        }
+    }
   }
 
   private onPointerDown = (event: PointerEvent) => {
@@ -458,6 +485,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         }
         return;
     }
+    
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -466,8 +494,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     if (intersects.length > 0) {
         const sphere = intersects[0].object as THREE.Mesh;
-        this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
-        document.body.style.cursor = 'pointer';
+        if (!sphere.userData['isSpawning']) {
+            this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
+            document.body.style.cursor = 'pointer';
+        }
     } else if (this.hoveredEmotionId) {
         this.hoveredEmotionId = null;
         document.body.style.cursor = 'default';
@@ -495,54 +525,32 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
     this.raycaster.setFromCamera(this.mouse, this.camera);
+
     const intersects = this.raycaster.intersectObjects(this.spheres, false);
 
     if (intersects.length > 0) {
       const selectedSphere = intersects[0].object as THREE.Mesh;
       const emotionData = selectedSphere.userData['emotion'];
       
-      const finalSize = selectedSphere.userData['currentSize'] || 350;
-      
       const worldPos = new THREE.Vector3();
       selectedSphere.getWorldPosition(worldPos);
       
       const direction = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize();
+      this.zoomDirection.copy(direction);
       
-      const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
-      const right = new THREE.Vector3().crossVectors(this.camera.up, direction).normalize();
-      const up = new THREE.Vector3().crossVectors(direction, right).normalize();
-      
-      let rightOffsetAmount = 0;
-      let upOffsetAmount = 0;
-      let zoomDistance = finalSize * 3.8;
-      
-      if (isMobile) {
-        upOffsetAmount = -finalSize * 1.0; 
-        zoomDistance = finalSize * 7.5; 
-      } else {
-        rightOffsetAmount = finalSize * 0.8; 
-        upOffsetAmount = -finalSize * 0.6; // Offset down to avoid nav bar
-        zoomDistance = finalSize * 6.0; // Zoom out a bit more to avoid being too close
-      }
-      
-      this.targetOrbitCenter.copy(worldPos)
-        .add(right.clone().multiplyScalar(rightOffsetAmount))
-        .add(up.clone().multiplyScalar(upOffsetAmount));
-        
-      this.targetCameraPos.copy(worldPos)
-        .add(direction.multiplyScalar(zoomDistance))
-        .add(right.clone().multiplyScalar(rightOffsetAmount))
-        .add(up.clone().multiplyScalar(upOffsetAmount));
-      
-      this.isCameraAnimating = true;
+      this.recalculateZoomLayout(selectedSphere, direction);
 
-      let dist = null;
-      try {
-        const userLoc = await this.locationService.getLocation();
-        if (userLoc) {
-          const R = 6371; // Earth's radius in km
+      this.selectedEmotion = {
+        emotion: emotionData,
+        distance: null
+      };
+      this.emotionSelected.emit(true);
+
+      // Fetch location asynchronously without blocking the zoom animation
+      this.locationService.getLocation().then(userLoc => {
+        if (userLoc && this.selectedEmotion && this.selectedEmotion.emotion._id === emotionData._id) {
+          const R = 6371;
           const dLat = THREE.MathUtils.degToRad(emotionData.latitude - userLoc.latitude);
           const dLon = THREE.MathUtils.degToRad(emotionData.longitude - userLoc.longitude);
           const a = 
@@ -550,25 +558,34 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             Math.cos(THREE.MathUtils.degToRad(userLoc.latitude)) * Math.cos(THREE.MathUtils.degToRad(emotionData.latitude)) * 
             Math.sin(dLon/2) * Math.sin(dLon/2); 
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-          dist = R * c;
+          this.selectedEmotion.distance = R * c;
+          
+          // Re-generate footer sprite with distance
+          const tg = this.textGroups.find(t => t.userData['emotionId'] === emotionData._id);
+          if (tg && tg.userData['footerSprite']) {
+             const oldFooter = tg.userData['footerSprite'];
+             const newFooter = this.createFooterSprite(emotionData.username || 'Anonymous', this.formatDate(emotionData.local_time), this.selectedEmotion.distance);
+             
+             tg.remove(oldFooter);
+             tg.add(newFooter);
+             newFooter.layers.set(1); // Put it on the foreground layer!
+             tg.userData['footerSprite'] = newFooter;
+             
+             if (oldFooter.material.map) oldFooter.material.map.dispose();
+             oldFooter.material.dispose();
+          }
         }
-      } catch (err) {
-        console.error("Could not calculate distance", err);
-      }
+      }).catch(err => console.error("Could not calculate distance", err));
 
-      this.selectedEmotion = {
-        emotion: emotionData,
-        distance: dist
-      };
-      this.emotionSelected.emit(true);
+      this.orbitControls.enabled = false;
       
       // Move selected to layer 1 for sharp rendering and make it solid
       this.spheres.forEach(s => {
-        s.layers.set(0);
-        (s.material as THREE.MeshBasicMaterial).wireframe = true;
+        s.traverse((child) => child.layers.set(0));
+        if (s.material instanceof THREE.MeshBasicMaterial) s.material.wireframe = true;
       });
-      selectedSphere.layers.set(1);
-      (selectedSphere.material as THREE.MeshBasicMaterial).wireframe = false;
+      selectedSphere.traverse((child) => child.layers.set(1));
+      if (selectedSphere.material instanceof THREE.MeshBasicMaterial) selectedSphere.material.wireframe = false;
       
       // We don't hide 3D text anymore! It will morph.
       this.textGroups.forEach(tg => {
@@ -578,9 +595,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
            tg.visible = true;
            
            // Generate WebGL Metadata Sprites!
-           const emoji = this.emotionEmojis[emotionData.emotion] || '😶';
-           const headerSprite = this.createHeaderSprite(emotionData.emotion, emoji);
-           const footerSprite = this.createFooterSprite(emotionData.username, this.formatDate(emotionData.local_time), dist);
+           const emoji = this.getEmotionEmoji(emotionData.emotion);
+           const colorHex = this.getEmotionColor(emotionData.emotion);
+           const headerSprite = this.createHeaderSprite(emotionData.emotion, emoji, colorHex);
+           
+           // We use the calculated distance from selectedEmotion
+           const footerDist = this.selectedEmotion && this.selectedEmotion.distance !== undefined ? this.selectedEmotion.distance : null;
+           const footerSprite = this.createFooterSprite(emotionData.username || 'Anonymous', this.formatDate(emotionData.local_time), footerDist);
            
            tg.add(headerSprite);
            tg.add(footerSprite);
@@ -597,16 +618,51 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     }
   }
 
+  private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
+      const finalSize = selectedSphere.userData['currentSize'] || 350;
+      const worldPos = new THREE.Vector3();
+      selectedSphere.getWorldPosition(worldPos);
+      
+      const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
+      const right = new THREE.Vector3().crossVectors(this.camera.up, direction).normalize();
+      const up = new THREE.Vector3().crossVectors(direction, right).normalize();
+      
+      let rightOffsetAmount = 0;
+      let upOffsetAmount = 0;
+      let zoomDistance = finalSize * 3.8;
+      
+      if (isMobile) {
+        upOffsetAmount = -finalSize * 1.0; 
+        zoomDistance = finalSize * 7.5; 
+      } else {
+        rightOffsetAmount = finalSize * 1.25; // Shift camera more to the right, pushing sphere left
+        upOffsetAmount = 0; // Vertically center the view
+        zoomDistance = finalSize * 6.0; // Zoom out a bit more to avoid being too close
+      }
+      
+      this.targetOrbitCenter.copy(worldPos)
+        .add(right.clone().multiplyScalar(rightOffsetAmount))
+        .add(up.clone().multiplyScalar(upOffsetAmount));
+        
+      this.targetCameraPos.copy(worldPos)
+        .add(direction.clone().multiplyScalar(zoomDistance))
+        .add(right.clone().multiplyScalar(rightOffsetAmount))
+        .add(up.clone().multiplyScalar(upOffsetAmount));
+      
+      this.isCameraAnimating = true;
+  }
+
   public closeDetail() {
     this.selectedEmotion = null;
     this.emotionSelected.emit(false);
     this.targetCameraPos.set(0, 0, 4000);
     this.targetOrbitCenter.set(0, 0, 0);
     this.isCameraAnimating = true;
+    this.orbitControls.enabled = true;
     
     // Reset layers and visibility
     this.spheres.forEach(s => {
-      s.layers.set(0);
+      s.traverse((child) => child.layers.set(0));
       const mat = s.material as THREE.MeshBasicMaterial;
       mat.wireframe = true;
       mat.opacity = 1;
@@ -919,7 +975,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (isMobile) {
         startY = -sphereRadius * 1.9; 
     } else {
-        startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2) - (sphereRadius * 0.4);
+        startY = (lines.length * flatLineHeight) / 2 - (flatLineHeight / 2) - (sphereRadius * 0.15);
     }
     
     textGroup.userData['layoutTopY'] = startY;
@@ -929,7 +985,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     lines.forEach((line) => {
        const lineUnscaledWidth = line.width + (line.meshes.length - 1) * charSpacing;
        const lineScaledWidth = lineUnscaledWidth * textScale;
-       const centerX = isMobile ? 0 : sphereRadius * 1.1 + finalScaledWidth / 2;
+       const centerX = isMobile ? 0 : sphereRadius * 2.5;
        let xOffset = centerX - lineScaledWidth / 2; 
        line.meshes.forEach(m => {
            const targetGlobal = new THREE.Vector3(xOffset, startY, 0);
@@ -1313,8 +1369,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              const footerLogicalHeight = footer.userData['logicalHeight'] || 280;
              const headerLogicalHeight = header.userData['logicalHeight'] || 480;
              
-             const maxLineWidth = textGroup.userData['maxLineWidth'] || 0;
-             const centerX = isMobile ? 0 : (2000 * 1.1) + maxLineWidth / 2; // maxSize is 2000
+             const centerX = isMobile ? 0 : 2000 * 2.5; // maxSize is 2000
              
              const headerX = centerX;
              const footerX = centerX;

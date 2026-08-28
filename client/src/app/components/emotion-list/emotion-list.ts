@@ -16,6 +16,7 @@ export class EmotionListComponent implements OnInit {
   currentUser: any = null;
   deletingId: string | null = null;
   deleteSuccess: boolean = false;
+  isLoading: boolean = true;
   private emotionService = inject(EmotionService);
   private authService = inject(AuthService);
   private locationService = inject(LocationService);
@@ -49,6 +50,7 @@ export class EmotionListComponent implements OnInit {
     this.emotionService.getUserEmotions().subscribe({
       next: async (data) => {
         this.emotions = data;
+        this.isLoading = false;
         
         try {
           const loc = await this.locationService.getLocation();
@@ -60,13 +62,17 @@ export class EmotionListComponent implements OnInit {
               );
             }
           });
-        } catch (e) {
-          console.warn('Could not get location for distances');
+          this.cdr.detectChanges();
+        } catch (err) {
+          console.error("Location not available for distance calculation", err);
+          this.cdr.detectChanges();
         }
-        
-        this.cdr.detectChanges();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error("Failed to load emotions", err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
     });
 
     if (this.authService.isLoggedIn()) {

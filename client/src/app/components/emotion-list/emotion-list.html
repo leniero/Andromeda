@@ -53,10 +53,16 @@
             </div>
           </div>
         </ng-container>
-
       </li>
-      <li *ngIf="emotions.length === 0" class="text-center w-100 mt-5">
-        No emotions logged yet.
+
+      <li *ngIf="isLoading" class="loading-state-simple">
+        <div class="loader-spinner"></div>
+      </li>
+
+      <li *ngIf="!isLoading && emotions.length === 0" class="state-container empty-state">
+        <div class="empty-icon">😶</div>
+        <h3>It's quiet in here...</h3>
+        <p>You haven't logged any emotions yet.</p>
       </li>
     </ul>
   </div>

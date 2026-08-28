@@ -5,6 +5,7 @@ import { Observable, Subject } from 'rxjs';
 export interface EmotionData {
   _id?: string;
   userId?: string;
+  user?: string;
   emotion: string;
   reason: string;
   latitude: number;
