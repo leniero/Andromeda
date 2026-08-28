@@ -138,6 +138,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private font!: any;
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
+  private hoveredEmotionId: string | null = null;
   private orbitControls!: OrbitControls;
   
   private targetCameraPos = new THREE.Vector3(0, 0, 4000);
@@ -305,6 +306,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Listen for pointer interactions
     this.containerRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
     this.containerRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
+    this.containerRef.nativeElement.addEventListener('pointermove', this.onPointerMove);
+    this.containerRef.nativeElement.addEventListener('pointerleave', this.onPointerLeave);
     
     // Listen for theme changes from system preference, although now overridden by Input
     if (typeof window !== 'undefined') {
@@ -438,6 +441,35 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (event.button !== 0) return;
     this.pointerDownClientX = event.clientX;
     this.pointerDownClientY = event.clientY;
+  }
+
+  private onPointerMove = (event: PointerEvent) => {
+    if (this.selectedEmotion) {
+        if (this.hoveredEmotionId) {
+            this.hoveredEmotionId = null;
+            document.body.style.cursor = 'default';
+        }
+        return;
+    }
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.spheres, false);
+    
+    if (intersects.length > 0) {
+        const sphere = intersects[0].object as THREE.Mesh;
+        this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
+        document.body.style.cursor = 'pointer';
+    } else if (this.hoveredEmotionId) {
+        this.hoveredEmotionId = null;
+        document.body.style.cursor = 'default';
+    }
+  }
+
+  private onPointerLeave = (event: PointerEvent) => {
+    this.hoveredEmotionId = null;
+    document.body.style.cursor = 'default';
   }
 
   private onPointerUp = async (event: PointerEvent) => {
@@ -678,7 +710,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       uSpeed: { value: profile.speed },
       uPulseAmplitude: { value: profile.pulseAmplitude },
       uPulseSpeed: { value: profile.pulseSpeed },
-      uShapeType: { value: profile.shapeType }
+      uShapeType: { value: profile.shapeType },
+      uHoverFactor: { value: 0.0 }
     };
 
     const setupShader = (shader: any) => {
@@ -689,6 +722,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       shader.uniforms.uPulseAmplitude = uniforms.uPulseAmplitude;
       shader.uniforms.uPulseSpeed = uniforms.uPulseSpeed;
       shader.uniforms.uShapeType = uniforms.uShapeType;
+      shader.uniforms.uHoverFactor = uniforms.uHoverFactor;
       
       shader.vertexShader = `
         uniform float uTime;
@@ -698,13 +732,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         uniform float uPulseAmplitude;
         uniform float uPulseSpeed;
         uniform float uShapeType;
+        uniform float uHoverFactor;
         
         ${simplexNoise3D}
       ` + shader.vertexShader.replace(
         '#include <begin_vertex>',
         `
+        float activeSpeed = uSpeed * (1.0 + uHoverFactor * 2.0); // 3x speed on hover
+        float activePulseSpeed = uPulseSpeed * (1.0 + uHoverFactor * 2.0);
+        float activeAmplitude = uAmplitude * (1.0 + uHoverFactor * 0.5); // 1.5x amplitude
+
         vec3 displacedPos = position;
-        float noise = snoise(vec3(position * uFrequency + uTime * uSpeed));
+        float noise = snoise(vec3(position * uFrequency + uTime * activeSpeed));
         
         if (uShapeType > 1.5) {
             // Type 2: Ridged
@@ -712,12 +751,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             noise = pow(noise, 2.0);
         } else if (uShapeType > 0.5) {
             // Type 1: Spiky / Chaotic
-            float noise2 = snoise(vec3(position * uFrequency * 2.0 + uTime * uSpeed * 1.5));
-            noise = noise + (noise2 * 0.7); // Add a second octave of noise for jagged spikes
+            float noise2 = snoise(vec3(position * uFrequency * 2.0 + uTime * activeSpeed * 1.5));
+            noise = noise + (noise2 * 0.7);
         }
         
-        float pulse = sin(uTime * uPulseSpeed) * uPulseAmplitude;
-        displacedPos += normal * (noise * uAmplitude + pulse) * length(position);
+        float pulse = sin(uTime * activePulseSpeed) * uPulseAmplitude;
+        displacedPos += normal * (noise * activeAmplitude + pulse) * length(position);
         vec3 transformed = displacedPos;
         `
       );
@@ -727,10 +766,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     material.onBeforeCompile = setupShader;
     const sphere = new THREE.Mesh(geometry, material);
 
-    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
+    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 0.1 });
     solidMaterial.onBeforeCompile = setupShader;
     const solidSphere = new THREE.Mesh(geometry, solidMaterial);
-    solidSphere.userData = { isSolidChild: true, framesAlive: 0 };
+    solidSphere.userData = { isSolidChild: true, isSpawningPhase: true };
     sphere.add(solidSphere);
 
     const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
@@ -1072,6 +1111,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Apply Physics and Update Scale
     this.spheres.forEach(sphere => {
       const isSelected = this.selectedEmotion && sphere.userData['emotion']?._id === this.selectedEmotion.emotion._id;
+      const isHovered = this.hoveredEmotionId === sphere.userData['emotion']?._id;
 
       if (!isSelected && sphere.userData['velocity']) {
         sphere.userData['velocity'].multiplyScalar(0.85); // Damping
@@ -1092,16 +1132,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         }
       }
       
-      // Fade out solid child if it exists
-      const solidChild = sphere.children.find(c => c.userData['isSolidChild']) as THREE.Mesh;
-      if (solidChild) {
-        solidChild.userData['framesAlive']++;
-        if (solidChild.userData['framesAlive'] > 60) { // wait ~1 second before fading
+      if (sphere.children.length > 0) {
+        const solidChild = sphere.children[0] as THREE.Mesh;
+        if (solidChild && solidChild.userData['isSolidChild']) {
           const mat = solidChild.material as THREE.MeshBasicMaterial;
-          mat.opacity -= 0.005; // Fade out slowly over ~3 seconds
-          if (mat.opacity <= 0) {
-            sphere.remove(solidChild);
-            mat.dispose();
+          const targetOpacity = isHovered ? 0.6 : 0.05;
+          if (solidChild.userData['isSpawningPhase']) {
+            mat.opacity -= 0.005; // Fade out slowly after spawn
+            if (mat.opacity <= targetOpacity) {
+              solidChild.userData['isSpawningPhase'] = false;
+            }
+          } else {
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
           }
         }
       }
@@ -1116,15 +1158,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       const uniforms = sphere.userData['shaderUniforms'];
       if (uniforms) {
         uniforms.uTime.value += 0.02; 
+        uniforms.uHoverFactor.value = THREE.MathUtils.lerp(uniforms.uHoverFactor.value, isHovered ? 1.0 : 0.0, 0.1);
       }
 
       // Update sphere size based on elapsed time (older = smaller)
       const size = this.calculateSizeOverTime(sphere.userData['creationTime'], minSize, maxSize);
       const densityFactor = 0.15; // Fixed scalar instead of dynamic crowding
-      const finalSize = size * densityFactor;
+      let finalSize = size * densityFactor;
       sphere.userData['currentSize'] = finalSize;
       
-      sphere.scale.set(finalSize / maxSize, finalSize / maxSize, finalSize / maxSize);
+      const hoverScaleMultiplier = isHovered ? 1.15 : 1.0;
+      const targetScale = (finalSize / maxSize) * hoverScaleMultiplier;
+      sphere.scale.setScalar(THREE.MathUtils.lerp(sphere.scale.x, targetScale, 0.15));
 
       // Update the corresponding text group size
       const textGroup = this.textGroups.find(
@@ -1132,8 +1177,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       );
 
       if (textGroup) {
-        const textSizeFactor = finalSize / maxSize;
-        textGroup.scale.set(textSizeFactor, textSizeFactor, textSizeFactor);
+        const textHoverScale = isHovered ? 1.05 : 1.0; 
+        const textSizeFactor = (finalSize / maxSize) * textHoverScale;
+        textGroup.scale.setScalar(THREE.MathUtils.lerp(textGroup.scale.x, textSizeFactor, 0.15));
       }
     });
 
@@ -1312,6 +1358,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.fgRenderer) this.fgRenderer.dispose();
     if (this.mediaQueryList) {
       this.mediaQueryList.removeEventListener('change', this.onThemeChange);
+    }
+    if (this.containerRef) {
+      this.containerRef.nativeElement.removeEventListener('pointerdown', this.onPointerDown);
+      this.containerRef.nativeElement.removeEventListener('pointerup', this.onPointerUp);
+      this.containerRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);
+      this.containerRef.nativeElement.removeEventListener('pointerleave', this.onPointerLeave);
     }
     if (this.deleteSub) {
       this.deleteSub.unsubscribe();
