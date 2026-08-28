@@ -998,13 +998,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
         charGeometry.computeBoundingBox();
         let charWidth = charGeometry.boundingBox!.max.x - charGeometry.boundingBox!.min.x;
-        if (charStr === ' ') charWidth = sphereRadius * 0.08; 
+        if (charStr === ' ') charWidth = sphereRadius * 0.12; 
         
         charData.push({ charStr, charGeometry, charWidth });
         totalWidth += charWidth;
       }
 
-      let spacingMultiplier = 1.45; // Base padding multiplier
+      let spacingMultiplier = 1.85; // Base padding multiplier
       const totalAngleNeeded = (totalWidth / currentRadius) * spacingMultiplier;
       
       // If it exceeds 360 degrees (2 PI), we squash the spacing so it fits
@@ -1257,13 +1257,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             }
           });
         } else {
-          // Selected: Align perfectly parallel to the camera plane without mirroring
-          const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
-          textGroup.up.copy(cameraUp);
-          
-          const camToTarget = new THREE.Vector3().subVectors(this.camera.position, this.orbitControls.target);
-          const lookTarget = textGroup.position.clone().add(camToTarget);
-          textGroup.lookAt(lookTarget);
+          // Selected: Align perfectly parallel to the camera plane
+          const invSceneQuat = this.scene.quaternion.clone().invert();
+          textGroup.quaternion.copy(this.camera.quaternion).premultiply(invSceneQuat);
 
           if (!textGroup.userData['targetCalculated']) {
             this.calculateTargetLayout(textGroup, 2000); // maxSize is 2000
