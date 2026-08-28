@@ -520,10 +520,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       
       if (isMobile) {
         upOffsetAmount = -finalSize * 1.0; 
-        zoomDistance = finalSize * 6.5; 
+        zoomDistance = finalSize * 7.5; 
       } else {
         rightOffsetAmount = finalSize * 0.8; 
-        zoomDistance = finalSize * 5.0;
+        upOffsetAmount = -finalSize * 0.6; // Offset down to avoid nav bar
+        zoomDistance = finalSize * 6.0; // Zoom out a bit more to avoid being too close
       }
       
       this.targetOrbitCenter.copy(worldPos)
@@ -979,11 +980,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     lines.forEach((lineText, lineIndex) => {
       const textLength = lineText.length;
-      const maxSpacing = 0.18; 
-      const minSpacing = (2 * Math.PI) / Math.max(textLength, 1);
-      const angleIncrement = Math.min(maxSpacing, minSpacing);
-      
       const currentRadius = baseRadius + (lineIndex * sphereRadius * 0.3);
+
+      // Pre-calculate geometries and widths to avoid overlapping on long strings
+      const charData = [];
+      let totalWidth = 0;
 
       for (let i = 0; i < textLength; i++) {
         const charStr = lineText.charAt(i);
@@ -998,11 +999,29 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         charGeometry.computeBoundingBox();
         let charWidth = charGeometry.boundingBox!.max.x - charGeometry.boundingBox!.min.x;
         if (charStr === ' ') charWidth = sphereRadius * 0.08; 
+        
+        charData.push({ charStr, charGeometry, charWidth });
+        totalWidth += charWidth;
+      }
 
+      let spacingMultiplier = 1.25; // Base padding multiplier
+      const totalAngleNeeded = (totalWidth / currentRadius) * spacingMultiplier;
+      
+      // If it exceeds 360 degrees (2 PI), we squash the spacing so it fits
+      if (totalAngleNeeded > 2 * Math.PI) {
+          spacingMultiplier *= (2 * Math.PI) / totalAngleNeeded;
+      }
+
+      let currentAngle = 0;
+      for (let i = 0; i < textLength; i++) {
+        const data = charData[i];
+        const charStr = data.charStr;
+        
         const charMaterial = new THREE.MeshBasicMaterial({ color: this.isLightMode ? 0x1f2937 : 0xffffff });
-        const charMesh = new THREE.Mesh(charGeometry, charMaterial);
+        const charMesh = new THREE.Mesh(data.charGeometry, charMaterial);
 
-        const angle = i * angleIncrement;
+        const angle = currentAngle;
+        currentAngle += (data.charWidth / currentRadius) * spacingMultiplier;
         const x = currentRadius * Math.cos(angle);
         const y = currentRadius * Math.sin(angle);
 
@@ -1010,7 +1029,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         charMesh.rotation.z = angle + Math.PI / 2;
 
         charMesh.userData['charStr'] = charStr;
-        charMesh.userData['charWidth'] = charWidth;
+        charMesh.userData['charWidth'] = data.charWidth;
         charMesh.userData['originalPos'] = charMesh.position.clone();
         charMesh.userData['originalRot'] = charMesh.rotation.clone();
 
@@ -1168,9 +1187,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       
       const sizeRatio = finalSize / maxSize;
       let targetGeo = this.lodGeometries.high;
-      if (sizeRatio < 0.1) targetGeo = this.lodGeometries.tiny;
-      else if (sizeRatio < 0.3) targetGeo = this.lodGeometries.low;
-      else if (sizeRatio < 0.6) targetGeo = this.lodGeometries.med;
+      
+      if (isSelected || isHovered) {
+        targetGeo = this.lodGeometries.high;
+      } else {
+        if (sizeRatio < 0.1) targetGeo = this.lodGeometries.tiny;
+        else if (sizeRatio < 0.3) targetGeo = this.lodGeometries.low;
+        else if (sizeRatio < 0.6) targetGeo = this.lodGeometries.med;
+      }
       
       if (sphere.geometry !== targetGeo) {
         sphere.geometry = targetGeo;
