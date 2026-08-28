@@ -141,6 +141,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private hoveredEmotionId: string | null = null;
   private orbitControls!: OrbitControls;
   
+  private lodGeometries = {
+    high: new THREE.SphereGeometry(2000, 64, 64),
+    med: new THREE.SphereGeometry(2000, 32, 32),
+    low: new THREE.SphereGeometry(2000, 16, 16),
+    tiny: new THREE.SphereGeometry(2000, 8, 8)
+  };
+
   private targetCameraPos = new THREE.Vector3(0, 0, 4000);
   private targetOrbitCenter = new THREE.Vector3(0, 0, 0);
   private isCameraAnimating = false;
@@ -701,7 +708,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const color = this.getEmotionColor(emotion.emotion);
     const density = this.calculateDensity(emotion, allEmotions.length ? allEmotions : [emotion], 6000);
     
-    const geometry = new THREE.SphereGeometry(initialSize, 64, 64); // Increased segments for smoother noise displacement
+    const geometry = this.lodGeometries.high;
     const profile = emotionDistortionProfiles[emotion.emotion] || { amplitude: 0.1, frequency: 0.001, speed: 1.0, pulseAmplitude: 0.05, pulseSpeed: 1.0, shapeType: 0.0 };
     const uniforms = {
       uTime: { value: Math.random() * 100 }, // Random start time
@@ -1129,7 +1136,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         const solidChild = sphere.children[0] as THREE.Mesh;
         if (solidChild && solidChild.userData['isSolidChild']) {
           const mat = solidChild.material as THREE.MeshBasicMaterial;
-          const targetOpacity = isHovered ? 0.6 : 0.05;
+          const targetOpacity = isHovered ? 1.0 : 0.05; // Fade completely into a solid sphere
           if (solidChild.userData['isSpawningPhase']) {
             mat.opacity -= 0.005; // Fade out slowly after spawn
             if (mat.opacity <= targetOpacity) {
@@ -1156,9 +1163,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       // Update sphere size based on elapsed time (older = smaller)
       const size = this.calculateSizeOverTime(sphere.userData['creationTime'], minSize, maxSize);
       const densityFactor = 0.15; // Fixed scalar instead of dynamic crowding
-      const finalSize = size * densityFactor;
+      let finalSize = size * densityFactor;
       sphere.userData['currentSize'] = finalSize;
       
+      const sizeRatio = finalSize / maxSize;
+      let targetGeo = this.lodGeometries.high;
+      if (sizeRatio < 0.1) targetGeo = this.lodGeometries.tiny;
+      else if (sizeRatio < 0.3) targetGeo = this.lodGeometries.low;
+      else if (sizeRatio < 0.6) targetGeo = this.lodGeometries.med;
+      
+      if (sphere.geometry !== targetGeo) {
+        sphere.geometry = targetGeo;
+        if (sphere.children.length > 0 && sphere.children[0].userData['isSolidChild']) {
+          (sphere.children[0] as THREE.Mesh).geometry = targetGeo;
+        }
+      }
+
       sphere.scale.set(finalSize / maxSize, finalSize / maxSize, finalSize / maxSize);
 
       // Update the corresponding text group size
@@ -1200,8 +1220,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                  charMesh.position.lerp(origPos, 0.1);
                  
                  // Apply bold text scaling on hover
-                 const boldScaleX = isHovered ? 1.25 : 1.0; // stretch horizontally
-                 const boldScaleY = isHovered ? 1.15 : 1.0; // stretch vertically slightly
+                 const boldScaleX = isHovered ? 1.45 : 1.0; // stretch horizontally a lot
+                 const boldScaleY = isHovered ? 1.25 : 1.0; // stretch vertically slightly
                  charMesh.scale.x = THREE.MathUtils.lerp(charMesh.scale.x, boldScaleX, 0.15);
                  charMesh.scale.y = THREE.MathUtils.lerp(charMesh.scale.y, boldScaleY, 0.15);
                  charMesh.scale.z = 1.0;
