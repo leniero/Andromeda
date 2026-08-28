@@ -159,7 +159,7 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     padding: 1rem;
-    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
     gap: 0;
     align-items: center;
     min-height: 68px;
