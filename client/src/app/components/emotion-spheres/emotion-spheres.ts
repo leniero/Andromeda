@@ -766,7 +766,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     material.onBeforeCompile = setupShader;
     const sphere = new THREE.Mesh(geometry, material);
 
-    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 0.1 });
+    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
     solidMaterial.onBeforeCompile = setupShader;
     const solidSphere = new THREE.Mesh(geometry, solidMaterial);
     solidSphere.userData = { isSolidChild: true, isSpawningPhase: true };
