@@ -11,22 +11,38 @@
   </div>
 
   <div class="controls-overlay" *ngIf="!isZoomed && !isFormVisible && !isListRoute && !isAccountRoute && !isAuthRoute && !isWelcomeRoute">
-
-    <button class="btn-toggle-text" (click)="toggleText()">
-      {{ showText ? 'Hide Text' : 'Show Text' }}
+    <button class="btn-toggle-theme" (click)="toggleText()">
+      <div *ngIf="showText" class="icon-text-page-svg"></div>
+      <div *ngIf="!showText" class="icon-text-page-slash-svg"></div>
     </button>
-    
-    <div class="view-toggle" *ngIf="authService.isLoggedIn$ | async">
-      <button [class.active]="viewMode === 'world'" (click)="setViewMode('world')">World</button>
-      <button [class.active]="viewMode === 'me'" (click)="setViewMode('me')">Me</button>
-    </div>
   </div>
 
   <div class="fab-container" #fabContainer *ngIf="!isListRoute && !isAccountRoute && !isAuthRoute && !isWelcomeRoute">
     <div class="form-overlay" *ngIf="isFormVisible">
       <app-emotion-form [initialViewMode]="viewMode" (emotionLogStarted)="onEmotionLogStarted()" (emotionLogged)="onEmotionLogged($event)" (viewModeChanged)="setViewMode($event)"></app-emotion-form>
     </div>
-    <button class="btn-fab-circle" [class.btn-fab-close]="isFormVisible" (click)="toggleForm()">
+    
+    <div class="bottom-controls" *ngIf="!isFormVisible">
+      <button *ngIf="authService.isLoggedIn$ | async" 
+              class="btn-bottom-icon" 
+              [class.active]="viewMode === 'world'" 
+              (click)="setViewMode('world')">
+        <div class="icon-globe-svg" [class.fill]="viewMode === 'world'"></div>
+      </button>
+      
+      <button class="btn-fab-circle" (click)="toggleForm()">
+        <div class="icon-plus"></div>
+      </button>
+      
+      <button *ngIf="authService.isLoggedIn$ | async" 
+              class="btn-bottom-icon" 
+              [class.active]="viewMode === 'me'" 
+              (click)="setViewMode('me')">
+        <div class="icon-person-bottom-svg" [class.fill]="viewMode === 'me'"></div>
+      </button>
+    </div>
+
+    <button *ngIf="isFormVisible" class="btn-fab-circle btn-fab-close" (click)="toggleForm()">
       <div class="icon-plus"></div>
     </button>
   </div>
