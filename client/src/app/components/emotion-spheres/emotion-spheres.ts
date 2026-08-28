@@ -138,6 +138,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private font!: any;
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
+  private hoveredEmotionId: string | null = null;
   private orbitControls!: OrbitControls;
   
   private targetCameraPos = new THREE.Vector3(0, 0, 4000);
@@ -305,6 +306,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Listen for pointer interactions
     this.containerRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
     this.containerRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
+    this.containerRef.nativeElement.addEventListener('pointermove', this.onPointerMove);
+    this.containerRef.nativeElement.addEventListener('pointerleave', this.onPointerLeave);
     
     // Listen for theme changes from system preference, although now overridden by Input
     if (typeof window !== 'undefined') {
@@ -438,6 +441,35 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (event.button !== 0) return;
     this.pointerDownClientX = event.clientX;
     this.pointerDownClientY = event.clientY;
+  }
+
+  private onPointerMove = (event: PointerEvent) => {
+    if (this.selectedEmotion) {
+        if (this.hoveredEmotionId) {
+            this.hoveredEmotionId = null;
+            document.body.style.cursor = 'default';
+        }
+        return;
+    }
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.spheres, false);
+    
+    if (intersects.length > 0) {
+        const sphere = intersects[0].object as THREE.Mesh;
+        this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
+        document.body.style.cursor = 'pointer';
+    } else if (this.hoveredEmotionId) {
+        this.hoveredEmotionId = null;
+        document.body.style.cursor = 'default';
+    }
+  }
+
+  private onPointerLeave = (event: PointerEvent) => {
+    this.hoveredEmotionId = null;
+    document.body.style.cursor = 'default';
   }
 
   private onPointerUp = async (event: PointerEvent) => {
@@ -727,10 +759,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     material.onBeforeCompile = setupShader;
     const sphere = new THREE.Mesh(geometry, material);
 
-    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
+    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 0.1 });
     solidMaterial.onBeforeCompile = setupShader;
     const solidSphere = new THREE.Mesh(geometry, solidMaterial);
-    solidSphere.userData = { isSolidChild: true, framesAlive: 0 };
+    solidSphere.userData = { isSolidChild: true, isSpawningPhase: true };
     sphere.add(solidSphere);
 
     const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
@@ -1072,6 +1104,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Apply Physics and Update Scale
     this.spheres.forEach(sphere => {
       const isSelected = this.selectedEmotion && sphere.userData['emotion']?._id === this.selectedEmotion.emotion._id;
+      const isHovered = this.hoveredEmotionId === sphere.userData['emotion']?._id;
 
       if (!isSelected && sphere.userData['velocity']) {
         sphere.userData['velocity'].multiplyScalar(0.85); // Damping
@@ -1084,7 +1117,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           const spring = new THREE.Vector3().subVectors(targetVec, sphere.position).multiplyScalar(0.02);
           sphere.position.add(spring);
           
-          if (sphere.position.distanceToSquared(targetVec) < 10000) {
+          if (sphere.position.distanceTo(targetVec) < 10) {
             sphere.userData['isSpawning'] = false;
           }
         } else {
@@ -1092,16 +1125,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         }
       }
       
-      // Fade out solid child if it exists
-      const solidChild = sphere.children.find(c => c.userData['isSolidChild']) as THREE.Mesh;
-      if (solidChild) {
-        solidChild.userData['framesAlive']++;
-        if (solidChild.userData['framesAlive'] > 60) { // wait ~1 second before fading
+      if (sphere.children.length > 0) {
+        const solidChild = sphere.children[0] as THREE.Mesh;
+        if (solidChild && solidChild.userData['isSolidChild']) {
           const mat = solidChild.material as THREE.MeshBasicMaterial;
-          mat.opacity -= 0.005; // Fade out slowly over ~3 seconds
-          if (mat.opacity <= 0) {
-            sphere.remove(solidChild);
-            mat.dispose();
+          const targetOpacity = isHovered ? 0.6 : 0.05;
+          if (solidChild.userData['isSpawningPhase']) {
+            mat.opacity -= 0.005; // Fade out slowly after spawn
+            if (mat.opacity <= targetOpacity) {
+              solidChild.userData['isSpawningPhase'] = false;
+            }
+          } else {
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
           }
         }
       }
@@ -1142,6 +1177,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       const sphere = textGroup.userData['sphere'];
       const rotationSpeed = textGroup.userData['rotationSpeed'];
       const isSelected = this.selectedEmotion?.emotion._id === textGroup.userData['emotionId'];
+      const isHovered = this.hoveredEmotionId === textGroup.userData['emotionId'];
       
       if (sphere) {
         textGroup.position.copy(sphere.position);
@@ -1162,7 +1198,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                  const origPos = charMesh.userData['originalPos'];
                  const origRot = charMesh.userData['originalRot'];
                  charMesh.position.lerp(origPos, 0.1);
-                 charMesh.scale.setScalar(THREE.MathUtils.lerp(charMesh.scale.x, 1.0, 0.1));
+                 
+                 // Apply bold text scaling on hover
+                 const boldScaleX = isHovered ? 1.25 : 1.0; // stretch horizontally
+                 const boldScaleY = isHovered ? 1.15 : 1.0; // stretch vertically slightly
+                 charMesh.scale.x = THREE.MathUtils.lerp(charMesh.scale.x, boldScaleX, 0.15);
+                 charMesh.scale.y = THREE.MathUtils.lerp(charMesh.scale.y, boldScaleY, 0.15);
+                 charMesh.scale.z = 1.0;
+
                  charMesh.rotation.x = THREE.MathUtils.lerp(charMesh.rotation.x, origRot.x, 0.1);
                  charMesh.rotation.y = THREE.MathUtils.lerp(charMesh.rotation.y, origRot.y, 0.1);
                  charMesh.rotation.z = THREE.MathUtils.lerp(charMesh.rotation.z, origRot.z, 0.1);
@@ -1312,6 +1355,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.fgRenderer) this.fgRenderer.dispose();
     if (this.mediaQueryList) {
       this.mediaQueryList.removeEventListener('change', this.onThemeChange);
+    }
+    if (this.containerRef) {
+      this.containerRef.nativeElement.removeEventListener('pointerdown', this.onPointerDown);
+      this.containerRef.nativeElement.removeEventListener('pointerup', this.onPointerUp);
+      this.containerRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);
+      this.containerRef.nativeElement.removeEventListener('pointerleave', this.onPointerLeave);
     }
     if (this.deleteSub) {
       this.deleteSub.unsubscribe();
