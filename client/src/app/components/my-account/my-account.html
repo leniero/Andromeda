@@ -1,7 +1,14 @@
-<div class="auth-container">
+<div class="account-loading-center" *ngIf="!user && !error">
+  <div class="loader-spinner-global"></div>
+</div>
+
+<div class="account-error-center" *ngIf="!user && error">
+  <div class="error-msg">{{ error }}</div>
+</div>
+
+<div class="auth-container" *ngIf="user">
   <div class="glass-card">
-    
-    <div class="profile-info" *ngIf="user; else loading">
+    <div class="profile-info">
       <div class="account-info">
         
         <div class="emoji-circle">
@@ -65,12 +72,5 @@
 
       </div>
     </div>
-
-    <ng-template #loading>
-      <div *ngIf="error; else spinner" class="error-msg">{{ error }}</div>
-      <ng-template #spinner>
-        <p class="text-center">Loading profile...</p>
-      </ng-template>
-    </ng-template>
   </div>
 </div>
