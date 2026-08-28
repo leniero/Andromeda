@@ -632,7 +632,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       let zoomDistance = finalSize * 3.8;
       
       if (isMobile) {
-        upOffsetAmount = -finalSize * 1.0; 
+        upOffsetAmount = -finalSize * 0.3; 
         zoomDistance = finalSize * 7.5; 
       } else {
         rightOffsetAmount = finalSize * 1.25; // Shift camera more to the right, pushing sphere left

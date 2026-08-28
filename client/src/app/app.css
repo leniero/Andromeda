@@ -419,10 +419,51 @@ main.main.route-overlay-center > * {
     left: 1rem;
   }
   .fab-container {
-    bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     right: auto;
+  }
+
+  /* Bigger toggle circles (dark mode + text toggle) */
+  .btn-toggle-theme {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* Bigger icon inside toggle circles */
+  .icon-moon-svg,
+  .icon-text-page-svg,
+  .icon-text-page-slash-svg {
+    width: 24px;
+    height: 24px;
+  }
+  .icon-sun-svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  /* Bigger FAB */
+  .btn-fab-circle {
+    width: 64px;
+    height: 64px;
+    font-size: 1.7rem;
+  }
+
+  /* Bigger world/me bottom icons */
+  .btn-bottom-icon {
+    width: 56px;
+    height: 56px;
+  }
+  .icon-globe-svg,
+  .icon-person-bottom-svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* More spacing between bottom controls */
+  .bottom-controls {
+    gap: 2rem;
   }
 }
 

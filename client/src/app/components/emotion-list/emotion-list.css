@@ -271,6 +271,11 @@
     padding: 6px 8px;
     font-size: 0.85em;
   }
+  .btn-delete {
+    width: 28px;
+    height: 28px;
+    font-size: 1.1rem;
+  }
 }
 
 @media (min-width: 769px) {
