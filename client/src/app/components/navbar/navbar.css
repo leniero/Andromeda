@@ -68,7 +68,7 @@
 .icon-person-circle {
   -webkit-mask: url(/person.crop.circle.badge.ellipsis.svg) no-repeat center;
   mask: url(/person.crop.circle.badge.ellipsis.svg) no-repeat center;
-  transform: scale(1.35);
+  transform: scale(1.42);
 }
 
 .nav-links a:hover .icon-list-bullet,
