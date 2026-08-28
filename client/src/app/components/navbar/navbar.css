@@ -66,8 +66,9 @@
 }
 
 .icon-person-circle {
-  -webkit-mask: url(/person.circle.svg) no-repeat center;
-  mask: url(/person.circle.svg) no-repeat center;
+  -webkit-mask: url(/person.crop.circle.badge.ellipsis.svg) no-repeat center;
+  mask: url(/person.crop.circle.badge.ellipsis.svg) no-repeat center;
+  transform: scale(1.12);
 }
 
 .nav-links a:hover .icon-list-bullet,
@@ -88,8 +89,8 @@
 }
 
 .nav-links a.active .icon-person-circle {
-  -webkit-mask: url(/person.circle.fill.svg) no-repeat center;
-  mask: url(/person.circle.fill.svg) no-repeat center;
+  -webkit-mask: url(/person.crop.circle.badge.ellipsis.fill.svg) no-repeat center;
+  mask: url(/person.crop.circle.badge.ellipsis.fill.svg) no-repeat center;
 }
 
 /* ===========================
