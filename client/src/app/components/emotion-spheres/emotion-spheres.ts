@@ -1057,6 +1057,15 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoEl.loop = true;
                videoEl.muted = true;
                videoEl.playsInline = true;
+               videoEl.setAttribute('playsinline', '');
+               videoEl.setAttribute('muted', '');
+               videoEl.crossOrigin = 'anonymous';
+               
+               // Only show the sphere when the video actually has a frame ready!
+               videoEl.onloadeddata = () => {
+                 videoMesh.visible = true;
+               };
+
                videoEl.play().catch(e => console.warn('Video autoplay failed:', e));
 
                const texture = new THREE.VideoTexture(videoEl);
@@ -1071,8 +1080,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoMesh.userData['videoEl'] = videoEl;
                videoMesh.userData['videoUrl'] = videoUrl;
                videoMesh.userData['videoTexture'] = texture;
-               
-               videoMesh.visible = true; // Show now that we have the video!
             }
          });
       }
