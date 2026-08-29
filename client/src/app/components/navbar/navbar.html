@@ -1,5 +1,5 @@
-<!-- DESKTOP NAVBAR -->
-<nav class="navbar-wrapper desktop-nav">
+<!-- UNIFIED NAVBAR -->
+<nav class="navbar-wrapper">
   <div class="navbar-semicircle">
     <div class="nav-links left">
       <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
@@ -26,29 +26,5 @@
         </a>
       </ng-container>
     </div>
-  </div>
-</nav>
-
-<!-- MOBILE NAVBAR -->
-<nav class="navbar mobile-nav">
-  <a class="nav-brand" [routerLink]="(authService.isLoggedIn$ | async) ? '/home' : '/'" [class.active]="isHomeRoute">
-    <div class="logo"></div>
-  </a>
-  <div class="nav-links">
-    <ng-container *ngIf="authService.isLoggedIn$ | async; else loggedOut">
-      <a class="icon-link" routerLink="/emotion-list" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Entries">
-        <div class="icon-list-bullet"></div>
-      </a>
-      <a class="icon-link" routerLink="/my-account" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Account">
-        <div class="icon-person-circle"></div>
-      </a>
-    </ng-container>
-
-    <ng-template #loggedOut>
-      <ng-container *ngIf="!isHiddenAuthPage">
-        <a routerLink="/login" routerLinkActive="active" class="auth-link">Login</a>
-        <a routerLink="/signup" routerLinkActive="active" class="auth-link">Sign Up</a>
-      </ng-container>
-    </ng-template>
   </div>
 </nav>

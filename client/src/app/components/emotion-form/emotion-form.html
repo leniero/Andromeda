@@ -1,5 +1,5 @@
 <div class="emotion-form-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; overflow: hidden;">
-  <form #formElement [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [ngClass]="morphState" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'">
+  <form #formElement [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [class.recording-active]="isRecording" [ngClass]="morphState" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'" [style.--progress]="recordProgress + '%'">
     
     <video #cameraPreview autoplay muted playsinline class="camera-preview" [class.recording]="isRecording"></video>
     
@@ -11,12 +11,8 @@
       </svg>
     </button>
     
-    <div class="progress-bar-container" *ngIf="isRecording">
-      <div class="progress-bar-fill" [style.width.%]="recordProgress"></div>
-    </div>
-    
     <div class="emoji-preview" [class.morph-emoji]="morphState !== 'idle'" [class.recording-hide]="isRecording" style="z-index: 1;">
-      {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '😶' }}
+      {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '✨' }}
     </div>
 
     <div class="form-contents" [class.fade-out]="morphState !== 'idle'" [class.recording-hide]="isRecording">

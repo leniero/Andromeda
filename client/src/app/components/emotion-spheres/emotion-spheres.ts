@@ -550,6 +550,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              
              this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
              
+             // Restrict controls for optimal video framing
+             this.orbitControls.enableZoom = false;
+             this.orbitControls.minPolarAngle = Math.PI / 2;
+             this.orbitControls.maxPolarAngle = Math.PI / 2;
+             
              if (this.videoElement) {
                this.videoElement.play().catch(e => console.error("Video play failed", e));
              }
@@ -774,6 +779,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.targetOrbitCenter.set(0, 0, 0);
     this.isCameraAnimating = true;
     this.orbitControls.enabled = true;
+    
+    // Restore normal orbit controls
+    this.orbitControls.enableZoom = true;
+    this.orbitControls.minPolarAngle = 0;
+    this.orbitControls.maxPolarAngle = Math.PI;
     
     // Clean up local video if active
     if (this.videoCylinder) {
