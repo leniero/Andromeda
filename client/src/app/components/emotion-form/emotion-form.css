@@ -290,18 +290,22 @@ button:not(:disabled):hover {
   transition: opacity 0.3s ease;
 }
 
-.glass-form.recording-active::before {
-  content: "";
+.progress-svg {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 4px; /* Border thickness */
-  background: conic-gradient(var(--btn-primary-bg, #ef4444) var(--progress, 0%), transparent 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 10;
+}
+
+.progress-svg rect {
+  fill: none;
+  stroke: var(--btn-primary-bg, #ef4444);
+  stroke-width: 4px;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.1s linear;
 }
 
 .btn-flip-camera {
