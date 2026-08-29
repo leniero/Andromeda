@@ -1285,7 +1285,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       for (let j = i + 1; j < this.spheres.length; j++) {
         const s2 = this.spheres[j];
         
-        if (s1.userData['isSpawning'] || s2.userData['isSpawning']) continue;
+        // Removed: if (s1.userData['isSpawning'] || s2.userData['isSpawning']) continue;
         
         const isSelected2 = this.selectedEmotion && s2.userData['emotion']?._id === this.selectedEmotion.emotion._id;
         if (isSelected2) continue;
@@ -1331,9 +1331,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         sphere.position.add(sphere.userData['velocity']);
         
         if (sphere.userData['isSpawning']) {
-          // Spring towards original surface position
+          // Spring towards original surface position (adjusted for current globeRadius)
           const target = sphere.userData['originalPosition'];
-          const targetVec = new THREE.Vector3(target.x, target.y, target.z);
+          const targetVec = new THREE.Vector3(target.x, target.y, target.z).normalize().multiplyScalar(globeRadius);
           const spring = new THREE.Vector3().subVectors(targetVec, sphere.position).multiplyScalar(0.02);
           sphere.position.add(spring);
           
