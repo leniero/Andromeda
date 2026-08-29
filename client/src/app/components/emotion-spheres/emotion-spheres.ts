@@ -557,11 +557,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              // Hide the outer colored sphere completely when inside, but keep video visible
              const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
              if (selectedSphere) {
-               selectedSphere.traverse((child) => {
-                 if (child instanceof THREE.Mesh && child !== this.videoCylinder) {
-                   child.visible = false;
-                 }
-               });
+               (selectedSphere.material as THREE.Material).visible = false;
                this.textGroups.forEach(tg => {
                  if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = false;
                });
@@ -762,6 +758,16 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   }
 
   public closeDetail() {
+    if (this.selectedEmotion) {
+       const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
+       if (selectedSphere) {
+         (selectedSphere.material as THREE.Material).visible = true;
+         this.textGroups.forEach(tg => {
+           if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = true;
+         });
+       }
+    }
+
     this.selectedEmotion = null;
     this.emotionSelected.emit(false);
     this.targetCameraPos.set(0, 0, 4000);
