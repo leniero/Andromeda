@@ -273,13 +273,14 @@ button:not(:disabled):hover {
   height: 100%;
   object-fit: cover;
   border-radius: 16px;
-  opacity: 1; /* Fully visible in background of card */
+  opacity: 0; /* Hidden until recording starts */
   pointer-events: none;
   transition: opacity 0.5s ease;
   z-index: 0;
 }
 
 .camera-preview.recording {
+  opacity: 1; /* Fully visible while holding */
   z-index: 5; /* Bring above form elements when recording */
 }
 
