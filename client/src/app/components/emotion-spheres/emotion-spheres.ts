@@ -708,29 +708,23 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.videoTexture.magFilter = THREE.LinearFilter;
     this.videoTexture.format = THREE.RGBAFormat;
 
-    // Cylinder must envelop the camera entirely.
-    // The targetSphere geometry has radius 2000, so we just use 2000 * 0.9. The scale is inherited.
-    const cylinderRadius = 2000 * 0.9;
-
-    const geometry = new THREE.SphereGeometry(cylinderRadius, 60, 40);
-    // Invert geometry so it's visible from inside and flipped vertically
-    geometry.scale(-1, -1, 1);
-
-    const material = new THREE.MeshBasicMaterial({
-      map: this.videoTexture,
-      side: THREE.DoubleSide
-    });
-    this.videoCylinder = new THREE.Mesh(geometry, material);
-
-    // Add directly to the target sphere to guarantee perfect alignment
-    this.videoCylinder.position.set(0, 0, 0);
-
-    // Add to foreground layer for high-res rendering
-    this.videoCylinder.layers.set(1);
-
-    // Attach to the scene directly
-    this.scene.add(this.videoCylinder);
-    this.videoCylinder.position.copy(targetSphere.position);
+    // Find the nested video mesh in the target sphere
+    const nestedVideoMesh = targetSphere.children.find(c => c.userData['isNestedVideo']) as THREE.Mesh;
+    if (nestedVideoMesh) {
+      this.videoCylinder = nestedVideoMesh; // Keep reference to reset it later
+      
+      const mat = nestedVideoMesh.material as THREE.MeshBasicMaterial;
+      mat.map = this.videoTexture;
+      mat.opacity = 1.0;
+      mat.transparent = false;
+      mat.needsUpdate = true;
+      
+      // Invert geometry so it's visible from inside and flipped vertically
+      if (!nestedVideoMesh.userData['inverted']) {
+        nestedVideoMesh.geometry.scale(-1, -1, 1);
+        nestedVideoMesh.userData['inverted'] = true;
+      }
+    }
   }
 
   private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
@@ -793,11 +787,17 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     // Clean up local video if active
     if (this.videoCylinder) {
-      if (this.videoCylinder.parent) {
-        this.videoCylinder.parent.remove(this.videoCylinder);
+      const mat = this.videoCylinder.material as THREE.MeshBasicMaterial;
+      mat.map = null;
+      mat.opacity = this.videoCylinder.userData['baseOpacity'] || 0.35;
+      mat.transparent = true;
+      mat.needsUpdate = true;
+      
+      // Revert geometry inversion
+      if (this.videoCylinder.userData['inverted']) {
+        this.videoCylinder.geometry.scale(-1, -1, 1);
+        this.videoCylinder.userData['inverted'] = false;
       }
-      this.videoCylinder.geometry.dispose();
-      (this.videoCylinder.material as THREE.Material).dispose();
       this.videoCylinder = null;
     }
     if (this.videoTexture) {
@@ -1583,9 +1583,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.selectedEmotion) {
       const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
       if (selectedSphere) {
-        // Track the video cylinder to the sphere's position, but rotate it independently around Y
+        // Rotate the nested video mesh independently around Y
         if (this.videoCylinder) {
-          this.videoCylinder.position.copy(selectedSphere.position);
           this.videoCylinder.rotation.y += 0.002; // Slow sideways rotation
         }
 
