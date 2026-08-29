@@ -705,7 +705,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.videoCylinder = nestedVideoMesh; // Keep reference to reset opacity if needed
     
     // We want the video to be scrubbable when inside. Pause immediately.
-    this.videoElement.pause();
+    this.videoElement?.pause();
 
     const mat = nestedVideoMesh.material as THREE.MeshBasicMaterial;
     mat.opacity = 1.0;
@@ -1044,6 +1044,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, side: THREE.DoubleSide, depthWrite: false });
       const videoMesh = new THREE.Mesh(geometry, material);
       videoMesh.userData = { isNestedVideo: true, baseOpacity: 1.0, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0, inverted: true };
+      videoMesh.visible = false; // Hide until video loads
       sphere.add(videoMesh);
 
       // Load video immediately so it's visible from the outside
@@ -1056,7 +1057,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoEl.loop = true;
                videoEl.muted = true;
                videoEl.playsInline = true;
-               videoEl.play().catch(e => console.error('Video autoplay failed:', e));
+               videoEl.play().catch(e => console.warn('Video autoplay failed:', e));
 
                const texture = new THREE.VideoTexture(videoEl);
                texture.minFilter = THREE.LinearFilter;
@@ -1070,6 +1071,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoMesh.userData['videoEl'] = videoEl;
                videoMesh.userData['videoUrl'] = videoUrl;
                videoMesh.userData['videoTexture'] = texture;
+               
+               videoMesh.visible = true; // Show now that we have the video!
             }
          });
       }

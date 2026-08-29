@@ -185,7 +185,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
         this.cameraPreview.nativeElement.srcObject = this.cameraStream;
       }
     } catch (err) {
-      console.error("Error accessing camera", err);
+      console.warn("Error accessing camera", err); // Use warn instead of error to avoid red overlay
       this.isCameraActive = false;
     }
   }
