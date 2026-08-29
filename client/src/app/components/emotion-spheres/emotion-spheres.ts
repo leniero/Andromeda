@@ -530,14 +530,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
           this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
           this.raycaster.setFromCamera(this.mouse, this.camera);
+          
+          this.raycaster.layers.enable(1);
           const intersects = this.raycaster.intersectObjects([this.videoCylinder], false);
+          this.raycaster.layers.disable(1);
+          
           if (intersects.length > 0 && !this.orbitControls.enabled) {
              // Fly inside the video sphere!
              this.isCameraAnimating = true;
-             this.targetCameraPos.copy(this.videoCylinder.position);
+             
+             const worldPos = new THREE.Vector3();
+             this.videoCylinder.getWorldPosition(worldPos);
+             
+             this.targetCameraPos.copy(worldPos);
              
              // Keep orbit controls target slightly ahead so we can look around from the center
-             this.targetOrbitCenter.copy(this.videoCylinder.position).sub(this.zoomDirection.clone().multiplyScalar(10));
+             this.targetOrbitCenter.copy(worldPos).sub(this.zoomDirection.clone().multiplyScalar(10));
              
              this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
              
@@ -625,14 +633,16 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         s.traverse((child) => child.layers.set(0));
         if (s.material instanceof THREE.MeshBasicMaterial) s.material.wireframe = true;
       });
-      selectedSphere.traverse((child) => child.layers.set(1));
-      if (selectedSphere.material instanceof THREE.MeshBasicMaterial) {
-         selectedSphere.material.wireframe = false;
-         if (emotionData.hasLocalVideo) {
-            selectedSphere.material.transparent = true;
-            selectedSphere.material.opacity = 0.5;
+      selectedSphere.traverse((child) => {
+         child.layers.set(1);
+         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+             child.material.wireframe = false;
+             if (emotionData.hasLocalVideo) {
+                 child.material.transparent = true;
+                 child.material.opacity = 0.1;
+             }
          }
-      }
+      });
       
       // We don't hide 3D text anymore! It will morph.
       this.textGroups.forEach(tg => {
@@ -700,14 +710,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     });
     this.videoCylinder = new THREE.Mesh(geometry, material);
     
-    // Place cylinder exactly where the sphere is
-    const worldPos = new THREE.Vector3();
-    targetSphere.getWorldPosition(worldPos);
-    this.videoCylinder.position.copy(worldPos);
+    // Add directly to the target sphere to guarantee perfect alignment
+    this.videoCylinder.position.set(0, 0, 0);
     
     // Add to foreground layer for high-res rendering
     this.videoCylinder.layers.set(1);
-    this.scene.add(this.videoCylinder);
+    targetSphere.add(this.videoCylinder);
   }
 
   private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
@@ -754,7 +762,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     // Clean up local video if active
     if (this.videoCylinder) {
-      this.scene.remove(this.videoCylinder);
+      if (this.videoCylinder.parent) {
+        this.videoCylinder.parent.remove(this.videoCylinder);
+      }
       this.videoCylinder.geometry.dispose();
       (this.videoCylinder.material as THREE.Material).dispose();
       this.videoCylinder = null;
@@ -777,11 +787,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Reset layers and visibility
     this.spheres.forEach(s => {
       s.visible = true;
-      s.traverse((child) => child.layers.set(0));
-      const mat = s.material as THREE.MeshBasicMaterial;
-      mat.wireframe = true;
-      mat.opacity = 1;
-      mat.transparent = true; // Wait, original was transparent? Just setting to 1 is fine.
+      s.traverse((child) => {
+         child.layers.set(0);
+         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+             if (child.userData['isSolidChild']) {
+                 child.material.wireframe = false;
+                 child.material.opacity = 1;
+             } else {
+                 child.material.wireframe = true;
+                 child.material.opacity = 1;
+             }
+         }
+      });
     });
     this.textGroups.forEach(tg => {
       tg.visible = this.showText;

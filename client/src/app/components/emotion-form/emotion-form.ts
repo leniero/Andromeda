@@ -194,12 +194,12 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
       
       this.mediaRecorder.start();
       
-      // Maximum record time: 5 seconds, or until released
+      // Maximum record time: 10 seconds, or until released
       setTimeout(() => {
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
           this.mediaRecorder.stop();
         }
-      }, 5000);
+      }, 10000);
     });
   }
 

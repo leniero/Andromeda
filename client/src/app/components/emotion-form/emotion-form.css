@@ -120,6 +120,9 @@ button {
   transition: all 0.2s;
   font-size: 1rem;
   color: var(--gradient-btn-text);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .rainbow-gradient {
@@ -270,14 +273,21 @@ button:not(:disabled):hover {
   height: 100%;
   object-fit: cover;
   border-radius: 20px;
-  opacity: 0;
+  opacity: 0.1; /* Dimly visible before recording */
   pointer-events: none;
   transition: opacity 0.5s ease;
   z-index: 0;
 }
 
-.camera-preview.active {
-  opacity: 1;
+.camera-preview.recording {
+  opacity: 1; /* Fully visible while holding */
+  z-index: 5; /* Bring above everything else in form */
+}
+
+.recording-hide {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
 .btn-flip-camera {
@@ -332,7 +342,7 @@ button:not(:disabled):hover {
   opacity: 1;
 }
 
-button[type="submit"].recording {
+button.recording {
   background: rgba(239, 68, 68, 0.8) !important;
   animation: pulse-record 1.5s infinite;
 }

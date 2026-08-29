@@ -1,5 +1,5 @@
 <div class="emotion-form-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; overflow: hidden;">
-  <video #cameraPreview autoplay muted playsinline class="camera-preview" [class.active]="isCameraActive"></video>
+  <video #cameraPreview autoplay muted playsinline class="camera-preview" [class.recording]="isRecording"></video>
   
   <!-- Flip camera button shown only when camera is active -->
   <button *ngIf="isCameraActive" type="button" class="btn-flip-camera" (click)="flipCamera($event)" title="Flip Camera">
@@ -11,11 +11,11 @@
 
   <form #formElement [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [ngClass]="morphState" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'">
     
-    <div class="emoji-preview" [class.morph-emoji]="morphState !== 'idle'">
+    <div class="emoji-preview" [class.morph-emoji]="morphState !== 'idle'" [class.recording-hide]="isRecording">
       {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '😶' }}
     </div>
 
-    <div class="form-contents" [class.fade-out]="morphState !== 'idle'">
+    <div class="form-contents" [class.fade-out]="morphState !== 'idle'" [class.recording-hide]="isRecording">
       <div class="form-group">
         <select formControlName="emotion">
           <option value="" disabled>Select an emotion...</option>
@@ -48,7 +48,7 @@
               (pointerup)="onPointerUp($event)"
               (pointerleave)="onPointerUp($event)"
               (contextmenu)="$event.preventDefault()">
-        {{ isSubmitting ? 'Logging...' : (isRecording ? 'Recording (Spin!)...' : 'Hold to record 360 / Tap to log text') }}
+        {{ isSubmitting ? 'Logging...' : (isRecording ? 'Recording (Spin!)...' : 'Tap or Hold') }}
       </button>
     </div>
   </form>
