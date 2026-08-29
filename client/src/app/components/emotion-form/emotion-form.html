@@ -1,4 +1,4 @@
-<div class="emotion-form-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; overflow: hidden; padding: 20px;">
+<div class="emotion-form-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; overflow: hidden;">
   <form #formElement [formGroup]="emotionForm" (ngSubmit)="onSubmit()" class="glass-form" [ngClass]="morphState" [style.backgroundColor]="selectedColor || 'rgba(255, 255, 255, 0.05)'">
     
     <video #cameraPreview autoplay muted playsinline class="camera-preview" [class.recording]="isRecording"></video>

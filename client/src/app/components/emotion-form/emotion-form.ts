@@ -108,6 +108,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
       if (this.isHolding && this.cameraStream) {
         this.isRecording = true;
         this.recordProgress = 0;
+        this.cdr.detectChanges(); // Force immediate UI update for camera/progress
         
         const startTime = Date.now();
         const maxTime = 10000;
@@ -115,6 +116,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
         this.holdInterval = setInterval(() => {
            const elapsed = Date.now() - startTime;
            this.recordProgress = Math.min((elapsed / maxTime) * 100, 100);
+           this.cdr.detectChanges(); // Update progress bar
         }, 50);
 
         this.startRecording().then(blob => {
@@ -125,6 +127,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
           clearInterval(this.holdInterval);
           this.recordProgress = 0;
           this.isRecording = false;
+          this.cdr.detectChanges();
           this.submitData();
         });
       }
