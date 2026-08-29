@@ -434,6 +434,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.scene = new THREE.Scene();
     
     this.camera = new THREE.PerspectiveCamera(45, width / height, 10, 25000);
+    this.camera.layers.enable(1); // Enable layer 1 so we can see foreground video elements
     this.camera.position.set(0, 0, 4000);
     // Important for dual canvas layers
     this.camera.layers.enable(0);

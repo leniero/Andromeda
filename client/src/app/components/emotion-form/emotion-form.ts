@@ -155,6 +155,8 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
          this.mediaRecorder.stop();
          // The promise in onPointerDown will catch the stop and call submitData
       }
+      this.isRecording = false;
+      this.cdr.detectChanges(); // Ensure UI hides progress bar and shows emoji immediately
     }
   }
 
