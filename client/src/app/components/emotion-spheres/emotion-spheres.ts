@@ -557,8 +557,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
           // Restrict controls for optimal video framing
           this.orbitControls.enableZoom = false;
-          this.orbitControls.minPolarAngle = 0; // Allow full vertical rotation
-          this.orbitControls.maxPolarAngle = Math.PI;
+          // Lock vertical rotation (pitch), only allow sideways (yaw) spinning!
+          this.orbitControls.minPolarAngle = Math.PI / 2; 
+          this.orbitControls.maxPolarAngle = Math.PI / 2;
 
           if (this.videoElement) {
             this.videoElement.play().catch(e => console.error("Video play failed", e));
