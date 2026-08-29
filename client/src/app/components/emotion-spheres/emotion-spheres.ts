@@ -534,6 +534,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       if (nestedVideoMesh) {
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.layers.enableAll();
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const intersects = this.raycaster.intersectObjects([nestedVideoMesh], false);
