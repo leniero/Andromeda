@@ -272,22 +272,41 @@ button:not(:disabled):hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 20px;
-  opacity: 0.1; /* Dimly visible before recording */
+  border-radius: 16px;
+  opacity: 1; /* Fully visible in background of card */
   pointer-events: none;
   transition: opacity 0.5s ease;
   z-index: 0;
 }
 
 .camera-preview.recording {
-  opacity: 1; /* Fully visible while holding */
-  z-index: 5; /* Bring above everything else in form */
+  z-index: 5; /* Bring above form elements when recording */
 }
 
 .recording-hide {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+}
+
+.progress-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--btn-primary-bg, #ef4444);
+  width: 0%;
+  transition: width 0.05s linear;
 }
 
 .btn-flip-camera {

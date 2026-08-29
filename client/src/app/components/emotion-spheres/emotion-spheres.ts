@@ -549,10 +549,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              
              this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
              
-             // Hide the outer colored sphere completely when inside
+             // Hide the outer colored sphere completely when inside, but keep video visible
              const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
              if (selectedSphere) {
-               selectedSphere.visible = false;
+               selectedSphere.traverse((child) => {
+                 if (child instanceof THREE.Mesh && child !== this.videoCylinder) {
+                   child.visible = false;
+                 }
+               });
                this.textGroups.forEach(tg => {
                  if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = false;
                });
@@ -697,8 +701,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.videoTexture.format = THREE.RGBAFormat;
     
     // Cylinder must envelop the camera entirely.
-    const finalSize = targetSphere.userData['currentSize'] || 350;
-    const cylinderRadius = finalSize * 0.9; // Just inside the outer sphere
+    // The targetSphere geometry has radius 2000, so we just use 2000 * 0.9. The scale is inherited.
+    const cylinderRadius = 2000 * 0.9;
     
     const geometry = new THREE.SphereGeometry(cylinderRadius, 60, 40);
     // Invert geometry so it's visible from inside, though DoubleSide also handles it
@@ -788,6 +792,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.spheres.forEach(s => {
       s.visible = true;
       s.traverse((child) => {
+         child.visible = true;
          child.layers.set(0);
          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
              if (child.userData['isSolidChild']) {

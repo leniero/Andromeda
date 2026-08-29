@@ -95,30 +95,38 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
   }
 
   private holdTimer: any;
+  private holdInterval: any;
   private isHolding = false;
+  public recordProgress = 0;
 
   onPointerDown(event: PointerEvent) {
     if (this.emotionForm.invalid || this.isSubmitting) return;
     
     // Start a timer for hold-to-record
     this.isHolding = true;
-    this.holdTimer = setTimeout(async () => {
+    this.holdTimer = setTimeout(() => {
       if (this.isHolding && this.cameraStream) {
         this.isRecording = true;
-        this.isCameraActive = true;
-        try {
-          const videoBlob = await this.startRecording();
-          if (this.isRecording) { // Ensure we haven't already submitted
-             this.isRecording = false;
-             this.submitData(videoBlob);
-          }
-        } catch (err) {
-          console.error("Recording failed", err);
-          if (this.isRecording) {
-            this.isRecording = false;
-            this.submitData();
-          }
-        }
+        this.recordProgress = 0;
+        
+        const startTime = Date.now();
+        const maxTime = 10000;
+        
+        this.holdInterval = setInterval(() => {
+           const elapsed = Date.now() - startTime;
+           this.recordProgress = Math.min((elapsed / maxTime) * 100, 100);
+        }, 50);
+
+        this.startRecording().then(blob => {
+          clearInterval(this.holdInterval);
+          this.recordProgress = 0;
+          this.submitData(blob);
+        }).catch(err => {
+          clearInterval(this.holdInterval);
+          this.recordProgress = 0;
+          this.isRecording = false;
+          this.submitData();
+        });
       }
     }, 400); // 400ms hold to trigger video
   }
@@ -126,6 +134,10 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
   onPointerUp(event: PointerEvent) {
     this.isHolding = false;
     clearTimeout(this.holdTimer);
+    clearInterval(this.holdInterval);
+    
+    // We do NOT clear this.recordProgress here immediately so the bar doesn't flash to 0 
+    // before the form submission completes and CSS hides it.
 
     if (this.isRecording) {
       if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
