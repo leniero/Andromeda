@@ -864,6 +864,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
            videoEl.pause();
            videoEl.removeAttribute('src');
            videoEl.load();
+           videoEl.remove();
         }
         if (child.userData['videoUrl']) {
            URL.revokeObjectURL(child.userData['videoUrl']);
@@ -898,6 +899,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
            videoEl.pause();
            videoEl.removeAttribute('src');
            videoEl.load();
+           videoEl.remove();
         }
         if (child.userData['videoUrl']) {
            URL.revokeObjectURL(child.userData['videoUrl']);
@@ -1067,6 +1069,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoEl.setAttribute('playsinline', '');
                videoEl.setAttribute('muted', '');
                videoEl.crossOrigin = 'anonymous';
+               
+               // Safari requires the video to be in the DOM to autoplay!
+               videoEl.style.display = 'none';
+               document.body.appendChild(videoEl);
                
                // Only show the sphere when the video actually has a frame ready!
                videoEl.onloadeddata = () => {

@@ -186,18 +186,26 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
   }
 
   async startCamera() {
-    this.stopCamera(); // Ensure any existing stream is stopped
+    this.stopCamera(); 
     try {
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: this.facingMode },
-        audio: false // No audio needed for this
+        audio: true
       });
-      if (this.cameraPreview) {
-        this.cameraPreview.nativeElement.srcObject = this.cameraStream;
-      }
     } catch (err) {
-      console.warn("Error accessing camera", err); // Use warn instead of error to avoid red overlay
-      this.isCameraActive = false;
+      console.warn("Camera/Mic access failed with audio/facingMode. Trying basic video only.", err);
+      try {
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (fallbackErr) {
+        console.warn("Error accessing camera even with fallback", fallbackErr);
+        this.isCameraActive = false;
+        return;
+      }
+    }
+    
+    this.isCameraActive = true;
+    if (this.cameraPreview) {
+      this.cameraPreview.nativeElement.srcObject = this.cameraStream;
     }
   }
 
