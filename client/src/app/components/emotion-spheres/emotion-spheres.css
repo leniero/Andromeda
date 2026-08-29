@@ -10,6 +10,16 @@
   z-index: 1;
 }
 
+@media (max-width: 768px) {
+  .visualization-wrapper {
+    top: env(safe-area-inset-top, 0px);
+    bottom: env(safe-area-inset-bottom, 0px);
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 40px;
+    overflow: hidden;
+  }
+}
+
 .btn-close-detail {
   position: absolute;
   bottom: calc(2rem + env(safe-area-inset-bottom, 0px));

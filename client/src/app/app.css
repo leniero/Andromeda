@@ -397,11 +397,14 @@ main.main.route-overlay-center > * {
 
 .account-loading-center,
 .account-error-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100dvh;
-  width: 100%;
+  z-index: 100;
   pointer-events: none;
 }
 

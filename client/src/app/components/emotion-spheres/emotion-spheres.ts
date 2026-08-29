@@ -573,8 +573,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           }
        }
        
-       // If clicking anywhere else while selected (or clicking when inside), close it.
-       this.closeDetail();
+       // If clicking anywhere else while selected, do nothing. The only way to exit is the X button.
        return;
     }
 
@@ -725,8 +724,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     
     // Add to foreground layer for high-res rendering
     this.videoCylinder.layers.set(1);
-    targetSphere.add(this.videoCylinder);
-  }
+    
+    // Attach to the globe group so it moves with the globe, but doesn't inherit the chaotic sphere rotation
+    if (this.spheresGroup) {
+      this.spheresGroup.add(this.videoCylinder);
+      this.videoCylinder.position.copy(targetSphere.position);
+    }
 
   private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
       const finalSize = selectedSphere.userData['currentSize'] || 350;
@@ -1327,13 +1330,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         const size1 = s1.userData['currentSize'] || 500;
         const size2 = s2.userData['currentSize'] || 500;
         // Collision threshold: sum of radii (scaled for text breathing room and zoom scaleFactor)
-        const minSpace = (size1 + size2) * 1.5 * scaleFactor; 
+        const minSpace = (size1 + size2) * 1.1 * scaleFactor; 
         const minSpaceSq = minSpace * minSpace;
         
         if (distSq > 0 && distSq < minSpaceSq) {
           const dist = Math.sqrt(distSq);
           // Push force increases dramatically as they get closer
-          const pushForce = ((minSpace - dist) / minSpace) * 10.0;
+          const pushForce = ((minSpace - dist) / minSpace) * 3.0;
           const pushVec = new THREE.Vector3().subVectors(s1.position, s2.position).normalize().multiplyScalar(pushForce);
           
           s1.userData['velocity'].add(pushVec);
@@ -1564,6 +1567,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.selectedEmotion) {
       const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
       if (selectedSphere) {
+        // Track the video cylinder to the sphere's position, but rotate it independently around Y
+        if (this.videoCylinder) {
+          this.videoCylinder.position.copy(selectedSphere.position);
+          this.videoCylinder.rotation.y += 0.002; // Slow sideways rotation
+        }
+
         const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
         
         const finalSize = selectedSphere.userData['currentSize'] || 350;

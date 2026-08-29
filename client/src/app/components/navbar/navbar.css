@@ -51,8 +51,8 @@
 }
 
 .icon-list-bullet, .icon-person-circle {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   background-color: var(--nav-icon-inactive);
   -webkit-mask-size: contain;
   mask-size: contain;
@@ -112,7 +112,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  height: 56px;
+  height: 60px;
   padding: 0 1.5rem;
   border-radius: 9999px;
   display: flex;
@@ -140,12 +140,12 @@
 }
 
 .auth-link {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
 .nav-brand .logo {
-  height: 40px;
-  width: 98px;
+  height: 44px;
+  width: 108px;
 }
 
 @media (min-width: 769px) {
