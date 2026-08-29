@@ -121,7 +121,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Force immediate UI update for camera/progress
         
         const startTime = Date.now();
-        const maxTime = 15000;
+        const maxTime = 10000;
         
         this.holdInterval = setInterval(() => {
            const elapsed = Date.now() - startTime;
