@@ -987,11 +987,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       );
     };
 
-    const material = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 1 });
+    const material = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 1, depthWrite: false });
     material.onBeforeCompile = setupShader;
     const sphere = new THREE.Mesh(geometry, material);
 
-    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1 });
+    const solidMaterial = new THREE.MeshBasicMaterial({ color, wireframe: false, transparent: true, opacity: 1, depthWrite: false });
     solidMaterial.onBeforeCompile = setupShader;
     const solidSphere = new THREE.Mesh(geometry, solidMaterial);
     solidSphere.userData = { isSolidChild: true, isSpawningPhase: true };
@@ -1032,7 +1032,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     if (emotion.hasLocalVideo) {
       const geometry = new THREE.SphereGeometry(maxSize * 0.7, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
       const videoMesh = new THREE.Mesh(geometry, material);
       videoMesh.userData = { isNestedVideo: true, baseOpacity: 0.35, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0 };
       sphere.add(videoMesh);
