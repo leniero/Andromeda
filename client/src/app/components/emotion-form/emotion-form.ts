@@ -114,12 +114,16 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
     
     // Start a timer for hold-to-record
     this.isHolding = true;
-    this.holdTimer = setTimeout(() => {
+    this.holdTimer = setTimeout(async () => {
       if (!this.isCameraActive) {
-         alert("Camera access is blocked or unavailable. Please enable camera permissions in your browser to record a video.");
-         this.isHolding = false;
-         this.submitData();
-         return;
+         // Try one more time in case they just granted permissions
+         await this.startCamera();
+         if (!this.isCameraActive) {
+            alert("Camera access is blocked or unavailable. Please enable camera permissions in your browser to record a video.");
+            this.isHolding = false;
+            this.submitData();
+            return;
+         }
       }
 
       if (this.isHolding && this.cameraStream) {

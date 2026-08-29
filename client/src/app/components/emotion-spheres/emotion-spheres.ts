@@ -792,8 +792,15 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Reset layers and visibility
     this.spheres.forEach(s => {
       s.visible = true;
+      (s.material as THREE.Material).visible = true;
       s.traverse((child) => {
-        child.visible = true;
+        // Only unhide nested video if it actually loaded a video
+        if (child.userData['isNestedVideo']) {
+          child.visible = !!child.userData['videoEl'];
+        } else {
+          child.visible = true;
+        }
+        
         child.layers.set(0);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
           if (child.userData['isNestedVideo']) {
