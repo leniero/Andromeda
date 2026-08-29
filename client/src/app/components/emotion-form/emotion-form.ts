@@ -100,6 +100,16 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
   public recordProgress = 0;
 
   onPointerDown(event: PointerEvent) {
+    const target = event.target as HTMLElement;
+    if (target.setPointerCapture) {
+      target.setPointerCapture(event.pointerId);
+    }
+    
+    if (event.pointerType === 'touch') {
+      // Prevent default touch behaviors like context menus
+      // event.preventDefault() can break pointer events on some browsers, so we rely on CSS
+    }
+    
     if (this.emotionForm.invalid || this.isSubmitting) return;
     
     // Start a timer for hold-to-record
@@ -117,15 +127,16 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
            const elapsed = Date.now() - startTime;
            this.recordProgress = Math.min((elapsed / maxTime) * 100, 100);
            this.cdr.detectChanges(); // Update progress bar
+           
+           if (elapsed >= maxTime) {
+             // Max time reached! Auto stop!
+             this.stopRecordingAndSubmit();
+           }
         }, 50);
 
         this.startRecording().then(blob => {
-          clearInterval(this.holdInterval);
-          this.recordProgress = 0;
           this.submitData(blob);
         }).catch(err => {
-          clearInterval(this.holdInterval);
-          this.recordProgress = 0;
           this.isRecording = false;
           this.cdr.detectChanges();
           this.submitData();
@@ -134,21 +145,30 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
     }, 400); // 400ms hold to trigger video
   }
 
-  onPointerUp(event: PointerEvent) {
-    this.isHolding = false;
-    clearTimeout(this.holdTimer);
+  private stopRecordingAndSubmit() {
     clearInterval(this.holdInterval);
+    this.recordProgress = 0;
+    this.isHolding = false;
     
-    // We do NOT clear this.recordProgress here immediately so the bar doesn't flash to 0 
-    // before the form submission completes and CSS hides it.
-
     if (this.isRecording) {
       if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
          this.mediaRecorder.stop();
+         // The promise in onPointerDown will catch the stop and call submitData
       }
-    } else if (!this.isSubmitting && this.emotionForm.valid) {
-      // It was a quick tap, just submit normally
+    }
+  }
+
+  onPointerUp(event: PointerEvent) {
+    if (this.isSubmitting) return;
+
+    if (this.isHolding && !this.isRecording) {
+      // It was a short tap!
+      this.isHolding = false;
+      clearTimeout(this.holdTimer);
       this.submitData();
+    } else if (this.isHolding && this.isRecording) {
+      // Released after hold
+      this.stopRecordingAndSubmit();
     }
   }
 

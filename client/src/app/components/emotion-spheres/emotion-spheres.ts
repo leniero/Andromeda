@@ -549,6 +549,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
              
              this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
              
+             if (this.videoElement) {
+               this.videoElement.play().catch(e => console.error("Video play failed", e));
+             }
+             
              // Hide the outer colored sphere completely when inside, but keep video visible
              const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
              if (selectedSphere) {
