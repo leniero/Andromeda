@@ -687,44 +687,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     }
   }
 
-  private async loadLocalVideo(id: string, targetSphere: THREE.Mesh) {
-    const blob = await this.videoStorageService.getVideo(id);
-    if (!blob) return;
-
-    this.currentVideoBlobUrl = URL.createObjectURL(blob);
-    this.videoElement = document.createElement('video');
-    this.videoElement.src = this.currentVideoBlobUrl;
-    this.videoElement.crossOrigin = 'anonymous';
-    this.videoElement.loop = false;
-    this.videoElement.muted = true;
-    this.videoElement.playsInline = true;
-
-    // We want the video to be scrubbable. Pause immediately.
-    this.videoElement.pause();
-
-    // Create texture
-    this.videoTexture = new THREE.VideoTexture(this.videoElement);
-    this.videoTexture.minFilter = THREE.LinearFilter;
-    this.videoTexture.magFilter = THREE.LinearFilter;
-    this.videoTexture.format = THREE.RGBAFormat;
-
+  private async loadLocalVideo(emotionId: string, targetSphere: THREE.Mesh) {
     // Find the nested video mesh in the target sphere
     const nestedVideoMesh = targetSphere.children.find(c => c.userData['isNestedVideo']) as THREE.Mesh;
-    if (nestedVideoMesh) {
-      this.videoCylinder = nestedVideoMesh; // Keep reference to reset it later
-      
-      const mat = nestedVideoMesh.material as THREE.MeshBasicMaterial;
-      mat.map = this.videoTexture;
-      mat.opacity = 1.0;
-      mat.transparent = false;
-      mat.needsUpdate = true;
-      
-      // Invert geometry so it's visible from inside and flipped vertically
-      if (!nestedVideoMesh.userData['inverted']) {
-        nestedVideoMesh.geometry.scale(-1, -1, 1);
-        nestedVideoMesh.userData['inverted'] = true;
-      }
-    }
+    if (!nestedVideoMesh || !nestedVideoMesh.userData['videoEl']) return;
+
+    this.videoElement = nestedVideoMesh.userData['videoEl'];
+    this.videoTexture = nestedVideoMesh.userData['videoTexture'];
+    this.videoCylinder = nestedVideoMesh; // Keep reference to reset opacity if needed
+    
+    // We want the video to be scrubbable when inside. Pause immediately.
+    this.videoElement.pause();
+
+    const mat = nestedVideoMesh.material as THREE.MeshBasicMaterial;
+    mat.opacity = 1.0;
+    mat.transparent = false;
+    mat.needsUpdate = true;
   }
 
   private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
@@ -788,32 +766,20 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Clean up local video if active
     if (this.videoCylinder) {
       const mat = this.videoCylinder.material as THREE.MeshBasicMaterial;
-      mat.map = null;
       mat.opacity = this.videoCylinder.userData['baseOpacity'] || 0.35;
       mat.transparent = true;
       mat.needsUpdate = true;
       
-      // Revert geometry inversion
-      if (this.videoCylinder.userData['inverted']) {
-        this.videoCylinder.geometry.scale(-1, -1, 1);
-        this.videoCylinder.userData['inverted'] = false;
-      }
       this.videoCylinder = null;
     }
-    if (this.videoTexture) {
-      this.videoTexture.dispose();
-      this.videoTexture = null;
-    }
+    
+    // We only pause the current playing video, we don't destroy it!
     if (this.videoElement) {
-      this.videoElement.pause();
-      this.videoElement.removeAttribute('src');
-      this.videoElement.load();
+      this.videoElement.play().catch(e => console.error("Video resume failed", e));
       this.videoElement = null;
     }
-    if (this.currentVideoBlobUrl) {
-      URL.revokeObjectURL(this.currentVideoBlobUrl);
-      this.currentVideoBlobUrl = null;
-    }
+    
+    this.videoTexture = null;
 
     // Reset layers and visibility
     this.spheres.forEach(s => {
@@ -875,6 +841,23 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private clearSpheres(): void {
     this.spheres.forEach(s => {
       this.scene.remove(s);
+      
+      // Cleanup video elements
+      s.traverse(child => {
+        if (child.userData['videoEl']) {
+           const videoEl = child.userData['videoEl'] as HTMLVideoElement;
+           videoEl.pause();
+           videoEl.removeAttribute('src');
+           videoEl.load();
+        }
+        if (child.userData['videoUrl']) {
+           URL.revokeObjectURL(child.userData['videoUrl']);
+        }
+        if (child instanceof THREE.Mesh && child.material.map) {
+           child.material.map.dispose();
+        }
+      });
+      
       s.geometry.dispose();
       (s.material as THREE.Material).dispose();
     });
@@ -892,6 +875,23 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (sphereIndex !== -1) {
       const s = this.spheres[sphereIndex];
       this.scene.remove(s);
+      
+      // Cleanup video elements
+      s.traverse(child => {
+        if (child.userData['videoEl']) {
+           const videoEl = child.userData['videoEl'] as HTMLVideoElement;
+           videoEl.pause();
+           videoEl.removeAttribute('src');
+           videoEl.load();
+        }
+        if (child.userData['videoUrl']) {
+           URL.revokeObjectURL(child.userData['videoUrl']);
+        }
+        if (child instanceof THREE.Mesh && child.material.map) {
+           child.material.map.dispose();
+        }
+      });
+      
       s.geometry.dispose();
       (s.material as THREE.Material).dispose();
       this.spheres.splice(sphereIndex, 1);
@@ -1032,10 +1032,39 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     if (emotion.hasLocalVideo) {
       const geometry = new THREE.SphereGeometry(maxSize * 0.7, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+      geometry.scale(-1, -1, 1); // Invert it so it's correct from the inside
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, side: THREE.DoubleSide, depthWrite: false });
       const videoMesh = new THREE.Mesh(geometry, material);
-      videoMesh.userData = { isNestedVideo: true, baseOpacity: 0.35, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0 };
+      videoMesh.userData = { isNestedVideo: true, baseOpacity: 1.0, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0, inverted: true };
       sphere.add(videoMesh);
+
+      // Load video immediately so it's visible from the outside
+      if (emotion._id) {
+         this.videoStorageService.getVideo(emotion._id).then(videoBlob => {
+            if (videoBlob) {
+               const videoUrl = URL.createObjectURL(videoBlob);
+               const videoEl = document.createElement('video');
+               videoEl.src = videoUrl;
+               videoEl.loop = true;
+               videoEl.muted = true;
+               videoEl.playsInline = true;
+               videoEl.play().catch(e => console.error('Video autoplay failed:', e));
+
+               const texture = new THREE.VideoTexture(videoEl);
+               texture.minFilter = THREE.LinearFilter;
+               texture.magFilter = THREE.LinearFilter;
+               texture.format = THREE.RGBAFormat;
+
+               videoMesh.material.map = texture;
+               videoMesh.material.color.setHex(0xffffff);
+               videoMesh.material.needsUpdate = true;
+               
+               videoMesh.userData['videoEl'] = videoEl;
+               videoMesh.userData['videoUrl'] = videoUrl;
+               videoMesh.userData['videoTexture'] = texture;
+            }
+         });
+      }
     }
 
     let textGroup: THREE.Group;
