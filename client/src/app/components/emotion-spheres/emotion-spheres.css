@@ -10,6 +10,40 @@
   z-index: 1;
 }
 
+.close-button {
+  position: absolute;
+  top: env(safe-area-inset-top, 20px);
+  right: env(safe-area-inset-right, 20px);
+  margin-top: 1rem;
+  margin-right: 1rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface-floating);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.close-button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.close-button svg {
+  width: 24px;
+  height: 24px;
+}
+
 .bg-canvas, .fg-canvas {
   position: absolute;
   top: 0;

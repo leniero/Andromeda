@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
+import { VideoStorageService } from '../../services/video-storage.service';
 
 const simplexNoise3D = `
 // GLSL 3D Simplex noise
@@ -157,6 +158,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   private isLightMode = false;
   private mediaQueryList!: MediaQueryList;
   private deleteSub!: Subscription;
+  
+  private videoStorageService = inject(VideoStorageService);
+  private videoElement: HTMLVideoElement | null = null;
+  private videoTexture: THREE.VideoTexture | null = null;
+  private videoCylinder: THREE.Mesh | null = null;
+  private currentVideoBlobUrl: string | null = null;
 
   public formatDate(dateString: string): string {
     const options: Intl.DateTimeFormatOptions = { 
@@ -519,6 +526,36 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if ((event.target as HTMLElement).closest('.emotion-detail-overlay')) return;
 
     if (this.selectedEmotion) {
+       if (this.videoCylinder) {
+          this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          const intersects = this.raycaster.intersectObjects([this.videoCylinder], false);
+          if (intersects.length > 0 && !this.orbitControls.enabled) {
+             // Fly inside the video sphere!
+             this.isCameraAnimating = true;
+             this.targetCameraPos.copy(this.videoCylinder.position);
+             
+             // Keep orbit controls target slightly ahead so we can look around from the center
+             this.targetOrbitCenter.copy(this.videoCylinder.position).sub(this.zoomDirection.clone().multiplyScalar(10));
+             
+             this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
+             
+             // Hide the outer colored sphere completely when inside
+             const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
+             if (selectedSphere) {
+               selectedSphere.visible = false;
+               this.textGroups.forEach(tg => {
+                 if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = false;
+               });
+             }
+             
+             // Emit event if we need to show a back button, or just rely on the existing 'X' logic
+             return;
+          }
+       }
+       
+       // If clicking anywhere else while selected (or clicking when inside), close it.
        this.closeDetail();
        return;
     }
@@ -546,6 +583,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         distance: null
       };
       this.emotionSelected.emit(true);
+
+      if (emotionData.hasLocalVideo) {
+        this.loadLocalVideo(emotionData._id, selectedSphere);
+      }
 
       // Fetch location asynchronously without blocking the zoom animation
       this.locationService.getLocation().then(userLoc => {
@@ -585,7 +626,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         if (s.material instanceof THREE.MeshBasicMaterial) s.material.wireframe = true;
       });
       selectedSphere.traverse((child) => child.layers.set(1));
-      if (selectedSphere.material instanceof THREE.MeshBasicMaterial) selectedSphere.material.wireframe = false;
+      if (selectedSphere.material instanceof THREE.MeshBasicMaterial) {
+         selectedSphere.material.wireframe = false;
+         if (emotionData.hasLocalVideo) {
+            selectedSphere.material.transparent = true;
+            selectedSphere.material.opacity = 0.5;
+         }
+      }
       
       // We don't hide 3D text anymore! It will morph.
       this.textGroups.forEach(tg => {
@@ -616,6 +663,51 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     } else {
       this.closeDetail();
     }
+  }
+
+  private async loadLocalVideo(id: string, targetSphere: THREE.Mesh) {
+    const blob = await this.videoStorageService.getVideo(id);
+    if (!blob) return;
+
+    this.currentVideoBlobUrl = URL.createObjectURL(blob);
+    this.videoElement = document.createElement('video');
+    this.videoElement.src = this.currentVideoBlobUrl;
+    this.videoElement.crossOrigin = 'anonymous';
+    this.videoElement.loop = false; 
+    this.videoElement.muted = true;
+    this.videoElement.playsInline = true;
+    
+    // We want the video to be scrubbable. Pause immediately.
+    this.videoElement.pause();
+    
+    // Create texture
+    this.videoTexture = new THREE.VideoTexture(this.videoElement);
+    this.videoTexture.minFilter = THREE.LinearFilter;
+    this.videoTexture.magFilter = THREE.LinearFilter;
+    this.videoTexture.format = THREE.RGBAFormat;
+    
+    // Cylinder must envelop the camera entirely.
+    const finalSize = targetSphere.userData['currentSize'] || 350;
+    const cylinderRadius = finalSize * 0.9; // Just inside the outer sphere
+    
+    const geometry = new THREE.SphereGeometry(cylinderRadius, 60, 40);
+    // Invert geometry so it's visible from inside, though DoubleSide also handles it
+    geometry.scale(-1, 1, 1);
+    
+    const material = new THREE.MeshBasicMaterial({ 
+      map: this.videoTexture,
+      side: THREE.DoubleSide
+    });
+    this.videoCylinder = new THREE.Mesh(geometry, material);
+    
+    // Place cylinder exactly where the sphere is
+    const worldPos = new THREE.Vector3();
+    targetSphere.getWorldPosition(worldPos);
+    this.videoCylinder.position.copy(worldPos);
+    
+    // Add to foreground layer for high-res rendering
+    this.videoCylinder.layers.set(1);
+    this.scene.add(this.videoCylinder);
   }
 
   private recalculateZoomLayout(selectedSphere: THREE.Mesh, direction: THREE.Vector3) {
@@ -660,12 +752,36 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.isCameraAnimating = true;
     this.orbitControls.enabled = true;
     
+    // Clean up local video if active
+    if (this.videoCylinder) {
+      this.scene.remove(this.videoCylinder);
+      this.videoCylinder.geometry.dispose();
+      (this.videoCylinder.material as THREE.Material).dispose();
+      this.videoCylinder = null;
+    }
+    if (this.videoTexture) {
+      this.videoTexture.dispose();
+      this.videoTexture = null;
+    }
+    if (this.videoElement) {
+      this.videoElement.pause();
+      this.videoElement.removeAttribute('src');
+      this.videoElement.load();
+      this.videoElement = null;
+    }
+    if (this.currentVideoBlobUrl) {
+      URL.revokeObjectURL(this.currentVideoBlobUrl);
+      this.currentVideoBlobUrl = null;
+    }
+    
     // Reset layers and visibility
     this.spheres.forEach(s => {
+      s.visible = true;
       s.traverse((child) => child.layers.set(0));
       const mat = s.material as THREE.MeshBasicMaterial;
       mat.wireframe = true;
       mat.opacity = 1;
+      mat.transparent = true; // Wait, original was transparent? Just setting to 1 is fine.
     });
     this.textGroups.forEach(tg => {
       tg.visible = this.showText;
@@ -1429,6 +1545,20 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         this.overlayX = isMobile ? 0 : desktopX;
         this.overlayY = isMobile ? mobileY : desktopY;
         this.cdr.detectChanges();
+      }
+    }
+
+    // Scrub 360 video if active based on orbit camera rotation
+    if (this.videoElement && !isNaN(this.videoElement.duration) && this.videoElement.duration > 0) {
+      let angle = this.orbitControls.getAzimuthalAngle(); // -PI to PI
+      // Start at 0 when looking straight ahead (angle = 0)
+      // Map -PI to 0s, PI to duration
+      let normalizedAngle = (angle + Math.PI) / (Math.PI * 2);
+      const targetTime = normalizedAngle * this.videoElement.duration;
+      
+      if (Math.abs(this.videoElement.currentTime - targetTime) > 0.03) {
+        this.videoElement.currentTime = targetTime;
+        if (this.videoTexture) this.videoTexture.needsUpdate = true;
       }
     }
 

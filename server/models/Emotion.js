@@ -9,6 +9,7 @@ const emotionSchema = new mongoose.Schema({
     latitude: Number,
     longitude: Number,
     local_time: Date,
+    hasLocalVideo: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model('Emotion', emotionSchema);

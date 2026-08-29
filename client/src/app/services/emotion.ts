@@ -15,6 +15,7 @@ export interface EmotionData {
   distance?: number;
   isPublic?: boolean;
   username?: string;
+  hasLocalVideo?: boolean;
 }
 
 @Injectable({

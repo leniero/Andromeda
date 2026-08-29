@@ -21,6 +21,7 @@
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
     "@types/three": "^0.185.4",
+    "idb": "^8.0.3",
     "jimp": "^1.6.1",
     "rxjs": "~7.8.0",
     "three": "^0.185.1",

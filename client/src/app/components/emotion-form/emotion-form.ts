@@ -1,8 +1,9 @@
-import { Component, inject, Output, EventEmitter, OnInit, ViewChild, ElementRef, ChangeDetectorRef, Input } from '@angular/core';
+import { Component, inject, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, Input } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmotionService, EmotionData } from '../../services/emotion';
 import { LocationService } from '../../services/location';
 import { AuthService } from '../../services/auth';
+import { VideoStorageService } from '../../services/video-storage.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -12,18 +13,28 @@ import { CommonModule } from '@angular/common';
   templateUrl: './emotion-form.html',
   styleUrls: ['./emotion-form.css']
 })
-export class EmotionFormComponent implements OnInit {
+export class EmotionFormComponent implements OnInit, OnDestroy {
   @Output() emotionLogged = new EventEmitter<EmotionData>();
   @Output() emotionLogStarted = new EventEmitter<void>();
   @Output() viewModeChanged = new EventEmitter<'world' | 'me'>();
   @Input() initialViewMode: 'world' | 'me' = 'world';
   @ViewChild('formElement') formElement!: ElementRef;
+  @ViewChild('cameraPreview') cameraPreview!: ElementRef<HTMLVideoElement>;
+  
   emotionForm: FormGroup;
   isSubmitting = false;
+  isCameraActive = false;
+  isRecording = false;
+  facingMode: 'user' | 'environment' = 'environment';
+  cameraStream: MediaStream | null = null;
+  mediaRecorder: MediaRecorder | null = null;
+  videoChunks: Blob[] = [];
+
   private fb = inject(FormBuilder);
   private emotionService = inject(EmotionService);
   private locationService = inject(LocationService);
   private cdr = inject(ChangeDetectorRef);
+  private videoStorageService = inject(VideoStorageService);
   authService = inject(AuthService);
 
   emotions = ['Anger', 'Contempt', 'Disgust', 'Envy', 'Guilt', 'Shame', 'Fear', 'Sadness', 'Surprise', 'Interest', 'Hope', 'Relief', 'Satisfaction', 'Joy', 'Elation', 'Pride'];
@@ -74,15 +85,135 @@ export class EmotionFormComponent implements OnInit {
     this.emotionForm.get('isPublic')?.valueChanges.subscribe(isPublic => {
       this.viewModeChanged.emit(isPublic ? 'world' : 'me');
     });
+
+    // Request camera permissions when component loads
+    this.startCamera();
+  }
+
+  ngOnDestroy() {
+    this.stopCamera();
+  }
+
+  private holdTimer: any;
+  private isHolding = false;
+
+  onPointerDown(event: PointerEvent) {
+    if (this.emotionForm.invalid || this.isSubmitting) return;
+    
+    // Start a timer for hold-to-record
+    this.isHolding = true;
+    this.holdTimer = setTimeout(async () => {
+      if (this.isHolding && this.cameraStream) {
+        this.isRecording = true;
+        this.isCameraActive = true;
+        try {
+          const videoBlob = await this.startRecording();
+          if (this.isRecording) { // Ensure we haven't already submitted
+             this.isRecording = false;
+             this.submitData(videoBlob);
+          }
+        } catch (err) {
+          console.error("Recording failed", err);
+          if (this.isRecording) {
+            this.isRecording = false;
+            this.submitData();
+          }
+        }
+      }
+    }, 400); // 400ms hold to trigger video
+  }
+
+  onPointerUp(event: PointerEvent) {
+    this.isHolding = false;
+    clearTimeout(this.holdTimer);
+
+    if (this.isRecording) {
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+         this.mediaRecorder.stop();
+      }
+    } else if (!this.isSubmitting && this.emotionForm.valid) {
+      // It was a quick tap, just submit normally
+      this.submitData();
+    }
+  }
+
+  async startCamera() {
+    this.stopCamera(); // Ensure any existing stream is stopped
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: this.facingMode },
+        audio: false // No audio needed for this
+      });
+      if (this.cameraPreview) {
+        this.cameraPreview.nativeElement.srcObject = this.cameraStream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera", err);
+      this.isCameraActive = false;
+    }
+  }
+
+  stopCamera() {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+    if (this.cameraPreview && this.cameraPreview.nativeElement) {
+      this.cameraPreview.nativeElement.srcObject = null;
+    }
+  }
+
+  async flipCamera(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+    if (this.isCameraActive) {
+      await this.startCamera();
+    }
+  }
+
+  startRecording(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.cameraStream) return reject("No camera stream");
+      
+      this.videoChunks = [];
+      try {
+        this.mediaRecorder = new MediaRecorder(this.cameraStream);
+      } catch (e) {
+        return reject(e);
+      }
+      
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) this.videoChunks.push(e.data);
+      };
+      
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.videoChunks, { type: this.mediaRecorder?.mimeType || 'video/mp4' });
+        resolve(blob);
+      };
+      
+      this.mediaRecorder.start();
+      
+      // Maximum record time: 5 seconds, or until released
+      setTimeout(() => {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+      }, 5000);
+    });
   }
 
   onSubmit() {
-    if (this.emotionForm.valid) {
-      this.isSubmitting = true;
-      const formData: EmotionData = {
-        ...this.emotionForm.value,
-        text_input: this.emotionForm.value.reason // map reason to text_input for backend
-      };
+     // Overridden by pointer events, but kept to prevent form sub errors
+  }
+
+  private submitData(videoBlob?: Blob) {
+    this.isSubmitting = true;
+    const formData: EmotionData = {
+      ...this.emotionForm.value,
+      text_input: this.emotionForm.value.reason,
+      hasLocalVideo: !!videoBlob
+    };
       
       // Freeze the form's dimensions so CSS can smoothly animate them down
       if (this.formElement) {
@@ -99,8 +230,14 @@ export class EmotionFormComponent implements OnInit {
             _id: Math.random().toString(36).substr(2, 9),
             username: res.username // Use the username returned by the backend
           };
+
+          // Save video to IndexedDB if we have one, using the new emotion ID
+          if (videoBlob && spawnedEmotion._id) {
+            this.videoStorageService.saveVideo(spawnedEmotion._id, videoBlob);
+          }
           
           this.isSubmitting = false;
+          this.stopCamera(); // Turn off camera after success
           this.successMessage = 'Logged Successfully!';
           
           // Force angular to apply the 'morphing' class IMMEDIATELY
@@ -138,6 +275,5 @@ export class EmotionFormComponent implements OnInit {
           this.isSubmitting = false;
         }
       });
-    }
   }
 }

@@ -10,7 +10,8 @@ const UserEmotionSchema = new mongoose.Schema({
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
   local_time: { type: Date, required: true },
-  isPublic: { type: Boolean, default: true }
+  isPublic: { type: Boolean, default: true },
+  hasLocalVideo: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('UserEmotion', UserEmotionSchema);
