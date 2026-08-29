@@ -1024,6 +1024,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.scene.add(sphere);
     this.spheres.push(sphere);
 
+    if (emotion.hasLocalVideo) {
+      const geometryCylinder = new THREE.CylinderGeometry(maxSize * 0.7, maxSize * 0.7, maxSize * 1.4, 64, 1, true);
+      const materialCylinder = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+      const videoMesh = new THREE.Mesh(geometryCylinder, materialCylinder);
+      videoMesh.userData = { isNestedVideo: true, baseOpacity: 0.35, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: (maxSize) / (maxSize * 0.7) };
+      sphere.add(videoMesh);
+    }
+
     let textGroup: THREE.Group;
     if (emotion.text_input && emotion.text_input.trim().length > 0) {
       textGroup = this.createTextGroup(this.font, emotion.text_input, maxSize);
@@ -1432,6 +1440,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         const textSizeFactor = finalSize / maxSize;
         textGroup.scale.set(textSizeFactor, textSizeFactor, textSizeFactor);
       }
+
+      // Handle nested video cylinder hover effect
+      sphere.children.forEach(child => {
+        if (child.userData['isNestedVideo']) {
+            const targetOpacity = isHovered ? child.userData['hoverOpacity'] : child.userData['baseOpacity'];
+            const targetScale = isHovered ? child.userData['hoverScale'] : 1.0;
+            
+            // @ts-ignore
+            child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.1);
+            child.scale.setScalar(THREE.MathUtils.lerp(child.scale.x, targetScale, 0.1));
+        }
+      });
     });
 
     // Update the text groups to track spheres and face the camera
