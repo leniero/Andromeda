@@ -264,8 +264,8 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
           const spawnedEmotion: EmotionData = {
             ...formData,
             local_time: new Date().toISOString(),
-            _id: Math.random().toString(36).substr(2, 9),
-            username: res.username // Use the username returned by the backend
+            _id: res.emotion?._id || Math.random().toString(36).substr(2, 9),
+            username: res.username || res.emotion?.username // Use the username returned by the backend
           };
 
           // Save video to IndexedDB if we have one, using the new emotion ID

@@ -647,9 +647,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         child.layers.set(1);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
           child.material.wireframe = false;
-          if (emotionData.hasLocalVideo) {
-            child.material.transparent = true;
-            child.material.opacity = 0.1;
+          if (child.userData['isNestedVideo']) {
+             child.material.opacity = 0.8; // Make the inner orb visible when zoomed in
+          } else if (emotionData.hasLocalVideo) {
+             child.material.transparent = true;
+             child.material.opacity = 0.1; // Make the outer shell transparent
           }
         }
       });
@@ -820,7 +822,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         child.visible = true;
         child.layers.set(0);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-          if (child.userData['isSolidChild']) {
+          if (child.userData['isNestedVideo']) {
+            child.material.wireframe = false;
+            child.material.opacity = child.userData['baseOpacity'] || 0.35;
+          } else if (child.userData['isSolidChild']) {
             child.material.wireframe = false;
             child.material.opacity = 1;
           } else {
@@ -1379,8 +1384,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       }
 
       if (sphere.children.length > 0) {
-        const solidChild = sphere.children[0] as THREE.Mesh;
-        if (solidChild && solidChild.userData['isSolidChild']) {
+        const solidChild = sphere.children.find(c => c.userData['isSolidChild']) as THREE.Mesh;
+        if (solidChild) {
           const mat = solidChild.material as THREE.MeshBasicMaterial;
           const targetOpacity = isHovered ? 1.0 : 0.05; // Fade completely into a solid sphere
           if (solidChild.userData['isSpawningPhase']) {

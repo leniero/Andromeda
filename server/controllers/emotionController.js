@@ -11,7 +11,7 @@ exports.recordEmotion = async (req, res) => {
         const emotion = new Emotion(emotionData);
         await emotion.save();
         io.emit('new_emotion', emotionData);
-        res.status(201).json({ status: "success" });
+        res.status(201).json({ status: "success", emotion: emotion });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
