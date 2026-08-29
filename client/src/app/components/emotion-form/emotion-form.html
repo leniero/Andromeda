@@ -12,7 +12,7 @@
     </button>
     
     <div class="emoji-preview" [class.morph-emoji]="morphState !== 'idle'" [class.recording-hide]="isRecording" style="z-index: 1;">
-      {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '✨' }}
+      {{ selectedEmotion ? emotionEmojis[selectedEmotion] : '😶' }}
     </div>
 
     <div class="form-contents" [class.fade-out]="morphState !== 'idle'" [class.recording-hide]="isRecording">
