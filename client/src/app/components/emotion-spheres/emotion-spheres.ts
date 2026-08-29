@@ -1387,14 +1387,18 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         const solidChild = sphere.children.find(c => c.userData['isSolidChild']) as THREE.Mesh;
         if (solidChild) {
           const mat = solidChild.material as THREE.MeshBasicMaterial;
-          const targetOpacity = isHovered ? 1.0 : 0.05; // Fade completely into a solid sphere
-          if (solidChild.userData['isSpawningPhase']) {
-            mat.opacity -= 0.005; // Fade out slowly after spawn
-            if (mat.opacity <= targetOpacity) {
-              solidChild.userData['isSpawningPhase'] = false;
+          const isSelectedSphere = this.selectedEmotion && sphere.userData['emotion']?._id === this.selectedEmotion.emotion._id;
+          
+          if (!isSelectedSphere) {
+            const targetOpacity = isHovered ? 1.0 : 0.05; // Fade completely into a solid sphere
+            if (solidChild.userData['isSpawningPhase']) {
+              mat.opacity -= 0.005; // Fade out slowly after spawn
+              if (mat.opacity <= targetOpacity) {
+                solidChild.userData['isSpawningPhase'] = false;
+              }
+            } else {
+              mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
             }
-          } else {
-            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
           }
         }
       }
