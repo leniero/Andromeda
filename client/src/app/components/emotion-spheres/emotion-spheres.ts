@@ -556,20 +556,27 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
           // Restrict controls for optimal video framing
           this.orbitControls.enableZoom = false;
-          this.orbitControls.minPolarAngle = Math.PI / 2;
-          this.orbitControls.maxPolarAngle = Math.PI / 2;
+          this.orbitControls.minPolarAngle = 0; // Allow full vertical rotation
+          this.orbitControls.maxPolarAngle = Math.PI;
 
           if (this.videoElement) {
             this.videoElement.play().catch(e => console.error("Video play failed", e));
           }
 
-          // Hide the outer colored sphere completely when inside, but keep video visible
-          if (selectedSphere) {
-            (selectedSphere.material as THREE.Material).visible = false;
-            this.textGroups.forEach(tg => {
-              if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = false;
-            });
-          }
+          // Hide EVERYTHING ELSE when inside the video
+          this.spheres.forEach(s => {
+            if (s !== selectedSphere) {
+              s.visible = false;
+            } else {
+              (s.material as THREE.Material).visible = false;
+              s.children.forEach(c => {
+                 if (c.userData['isSolidChild']) c.visible = false;
+              });
+            }
+          });
+          this.textGroups.forEach(tg => {
+            tg.visible = false;
+          });
 
           return;
         }
