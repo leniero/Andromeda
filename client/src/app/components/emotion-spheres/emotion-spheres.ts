@@ -801,7 +801,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         this.videoElement = null;
       }
       this.videoTexture = null;
-    this.spheres.forEach(s => {
+
+      // Reset layers and visibility
+      this.spheres.forEach(s => {
       s.visible = true;
       (s.material as THREE.Material).visible = true;
       s.traverse((child) => {
@@ -841,6 +843,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     });
 
     this.cdr.detectChanges();
+    }, 300);
   }
 
   private calculateDensity(currentEmotion: EmotionData, emotionsData: EmotionData[], radiusThreshold: number): number {
