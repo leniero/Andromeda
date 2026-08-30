@@ -22,7 +22,7 @@
 
 .btn-close-detail {
   position: absolute;
-  bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;

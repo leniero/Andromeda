@@ -116,6 +116,7 @@ const emotionDistortionProfiles: Record<string, { amplitude: number, frequency: 
   styleUrls: ['./emotion-spheres.css']
 })
 export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChanges {
+  public isClosing = false;
   @ViewChild('container', { static: true }) containerRef!: ElementRef;
   @ViewChild('bgCanvas', { static: true }) bgCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('fgCanvas', { static: true }) fgCanvasRef!: ElementRef<HTMLCanvasElement>;
@@ -753,51 +754,53 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   }
 
   public closeDetail() {
-    if (this.selectedEmotion) {
-      const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
-      if (selectedSphere) {
-        (selectedSphere.material as THREE.Material).visible = true;
-        this.textGroups.forEach(tg => {
-          if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = true;
-        });
+    if (this.isClosing) return;
+    this.isClosing = true;
+    this.cdr.detectChanges(); // Trigger animation
+    
+    // Wait for the animation to finish (0.3s) before actually closing
+    setTimeout(() => {
+      if (this.selectedEmotion) {
+        const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
+        if (selectedSphere) {
+          (selectedSphere.material as THREE.Material).visible = true;
+          this.textGroups.forEach(tg => {
+            if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = true;
+          });
+        }
       }
-    }
 
-    this.selectedEmotion = null;
-    this.isInVideo = false;
-    document.body.classList.remove('video-immersive-mode');
-    this.cdr.detectChanges();
-    this.emotionSelected.emit(false);
-    this.targetCameraPos.set(0, 0, 4000);
-    this.targetOrbitCenter.set(0, 0, 0);
-    this.isCameraAnimating = true;
-    this.orbitControls.enabled = true;
+      this.selectedEmotion = null;
+      this.isInVideo = false;
+      this.isClosing = false;
+      document.body.classList.remove('video-immersive-mode');
+      this.cdr.detectChanges();
+      this.emotionSelected.emit(false);
+      this.targetCameraPos.set(0, 0, 4000);
+      this.targetOrbitCenter.set(0, 0, 0);
+      this.isCameraAnimating = true;
+      this.orbitControls.enabled = true;
 
-    // Restore normal orbit controls
-    this.orbitControls.enableZoom = true;
-    this.orbitControls.enablePan = true;
-    this.orbitControls.minPolarAngle = 0;
-    this.orbitControls.maxPolarAngle = Math.PI;
+      // Restore normal orbit controls
+      this.orbitControls.enableZoom = true;
+      this.orbitControls.enablePan = true;
+      this.orbitControls.minPolarAngle = 0;
+      this.orbitControls.maxPolarAngle = Math.PI;
 
-    // Clean up local video if active
-    if (this.videoCylinder) {
-      const mat = this.videoCylinder.material as THREE.MeshBasicMaterial;
-      mat.opacity = this.videoCylinder.userData['baseOpacity'] || 0.35;
-      mat.transparent = true;
-      mat.needsUpdate = true;
-      
+      // Clean up local video if active
+      if (this.videoCylinder) {
+        const mat = this.videoCylinder.material as THREE.MeshBasicMaterial;
+        mat.opacity = this.videoCylinder.userData['baseOpacity'] || 0.35;
+        mat.transparent = true;
+        mat.needsUpdate = true;
+      }
       this.videoCylinder = null;
-    }
-    
-    // We only pause the current playing video, we don't destroy it!
-    if (this.videoElement) {
-      this.videoElement.play().catch(e => console.error("Video resume failed", e));
-      this.videoElement = null;
-    }
-    
-    this.videoTexture = null;
 
-    // Reset layers and visibility
+      if (this.videoElement) {
+        this.videoElement.play().catch(e => console.error("Video resume failed", e));
+        this.videoElement = null;
+      }
+      this.videoTexture = null;
     this.spheres.forEach(s => {
       s.visible = true;
       (s.material as THREE.Material).visible = true;

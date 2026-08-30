@@ -2,8 +2,8 @@
   <canvas #bgCanvas class="bg-canvas"></canvas>
   <canvas #fgCanvas class="fg-canvas"></canvas>
   
-  <div class="btn-close-detail" *ngIf="isInVideo">
-    <button class="btn-fab-circle btn-fab-close" (click)="closeDetail()" aria-label="Close detail view">
+  <div class="fab-container btn-close-detail" *ngIf="isInVideo">
+    <button class="btn-fab-circle" [class.btn-fab-close]="!isClosing" (click)="closeDetail()" aria-label="Close detail view">
       <div class="icon-plus"></div>
     </button>
   </div>
