@@ -52,7 +52,7 @@
 
 .fg-canvas {
   z-index: 2;
-  pointer-events: none; /* Let clicks pass through to wrapper */
+  pointer-events: auto;
 }
 
 .floating-text {

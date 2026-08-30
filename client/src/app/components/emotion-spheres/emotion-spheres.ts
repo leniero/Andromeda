@@ -332,10 +332,10 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Listen for window resize
     window.addEventListener('resize', this.onWindowResize);
     // Listen for pointer interactions
-    this.containerRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
-    this.containerRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
-    this.containerRef.nativeElement.addEventListener('pointermove', this.onPointerMove);
-    this.containerRef.nativeElement.addEventListener('pointerleave', this.onPointerLeave);
+    this.fgCanvasRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
+    this.fgCanvasRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
+    this.fgCanvasRef.nativeElement.addEventListener('pointermove', this.onPointerMove);
+    this.fgCanvasRef.nativeElement.addEventListener('pointerleave', this.onPointerLeave);
 
     // Listen for theme changes from system preference, although now overridden by Input
     if (typeof window !== 'undefined') {
@@ -449,7 +449,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.fgRenderer.setPixelRatio(window.devicePixelRatio);
     this.fgRenderer.setSize(width, height);
 
-    this.orbitControls = new OrbitControls(this.camera, this.containerRef.nativeElement);
+    this.orbitControls = new OrbitControls(this.camera, this.fgCanvasRef.nativeElement);
     this.orbitControls.enableDamping = true;
     this.orbitControls.dampingFactor = 0.05;
     this.orbitControls.minDistance = 100;
@@ -809,6 +809,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         child.layers.set(0);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
           if (child.userData['isNestedVideo']) {
+            // Counteract the parent sphere's random rotation so the video is perfectly upright in world space!
+            child.quaternion.copy(sphere.quaternion).invert();
             child.material.wireframe = false;
             child.material.opacity = child.userData['baseOpacity'] || 0.35;
           } else if (child.userData['isSolidChild']) {
@@ -1714,11 +1716,11 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.mediaQueryList) {
       this.mediaQueryList.removeEventListener('change', this.onThemeChange);
     }
-    if (this.containerRef) {
-      this.containerRef.nativeElement.removeEventListener('pointerdown', this.onPointerDown);
-      this.containerRef.nativeElement.removeEventListener('pointerup', this.onPointerUp);
-      this.containerRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);
-      this.containerRef.nativeElement.removeEventListener('pointerleave', this.onPointerLeave);
+    if (this.fgCanvasRef) {
+      this.fgCanvasRef.nativeElement.removeEventListener('pointerdown', this.onPointerDown);
+      this.fgCanvasRef.nativeElement.removeEventListener('pointerup', this.onPointerUp);
+      this.fgCanvasRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);
+      this.fgCanvasRef.nativeElement.removeEventListener('pointerleave', this.onPointerLeave);
     }
     
     document.body.classList.remove('video-immersive-mode');
