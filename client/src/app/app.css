@@ -338,48 +338,6 @@ main.main.route-overlay-center > * {
   max-width: calc(100vw - 4rem);
 }
 
-.btn-fab-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--glass-border);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--input-border);
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  padding: 0;
-}
-
-.btn-fab-circle:not(.btn-fab-close):hover {
-  background: var(--input-border);
-  transform: scale(1.05);
-}
-
-.btn-fab-circle.btn-fab-close {
-  background: var(--glass-border);
-  color: var(--text-primary);
-  border-color: var(--input-border);
-}
-
-.btn-fab-circle.btn-fab-close:hover {
-  background: var(--input-border);
-}
-
-/* Rotate the + icon inside the FAB to become × */
-.btn-fab-circle .icon-plus {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.btn-fab-circle.btn-fab-close .icon-plus {
-  transform: rotate(45deg);
-}
 
 /* Global loader spinner (reusable across pages) */
 .loader-spinner-global {

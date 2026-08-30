@@ -180,42 +180,7 @@
   max-width: calc(100vw - 4rem);
 }
 
-.btn-fab-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--glass-border);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--input-border);
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 0;
-}
 
-.btn-fab-circle:not(.btn-fab-close):hover {
-  background: var(--input-border) !important;
-  color: var(--text-primary) !important;
-  transform: scale(1.05) !important;
-}
-
-.btn-fab-circle.btn-fab-close {
-  transform: rotate(45deg);
-  background: var(--glass-border);
-  color: var(--text-primary);
-  border-color: var(--input-border);
-}
-
-
-.btn-fab-circle.btn-fab-close:hover {
-  background: var(--input-border);
-}
 
 @media (max-width: 768px) {
   .brand-overlay {

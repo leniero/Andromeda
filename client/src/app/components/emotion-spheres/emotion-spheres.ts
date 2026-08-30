@@ -1054,7 +1054,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     if (emotion.hasLocalVideo) {
       const geometry = new THREE.SphereGeometry(maxSize * 0.7, 32, 32);
-      geometry.scale(-1, -1, 1); // Invert it so it's correct from the inside
+      geometry.scale(-1, 1, 1); // Invert X-axis only so it's correct from the inside
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, side: THREE.DoubleSide, depthWrite: false });
       const videoMesh = new THREE.Mesh(geometry, material);
       videoMesh.userData = { isNestedVideo: true, baseOpacity: 1.0, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0, inverted: true };
