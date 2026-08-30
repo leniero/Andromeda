@@ -51,8 +51,8 @@
 }
 
 .icon-list-bullet, .icon-person-circle {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   background-color: var(--nav-icon-inactive);
   -webkit-mask-size: contain;
   mask-size: contain;
@@ -112,7 +112,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  height: 56px;
+  height: 68px;
   padding: 0 1.5rem;
   border-radius: 9999px;
   display: flex;
@@ -124,12 +124,12 @@
 
 @media (min-width: 769px) {
   .navbar-wrapper {
-    padding-top: 1.5rem;
+    padding-top: 1.25rem;
   }
   .navbar-semicircle {
-    height: 76px;
-    padding: 0 2.5rem;
-    gap: 2.5rem;
+    height: 56px;
+    padding: 0 1.5rem;
+    gap: 1.5rem;
   }
 }
 
@@ -144,13 +144,18 @@
 }
 
 .nav-brand .logo {
-  height: 40px;
-  width: 98px;
+  height: 42px;
+  width: 102px;
 }
 
 @media (min-width: 769px) {
   .nav-brand .logo {
-    height: 48px;
-    width: 118px;
+    height: 40px;
+    width: 98px;
+  }
+  
+  .icon-list-bullet, .icon-person-circle {
+    width: 30px;
+    height: 30px;
   }
 }

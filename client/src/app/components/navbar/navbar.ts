@@ -19,6 +19,20 @@ export class NavbarComponent {
     this.router.navigate(['/']);
   }
 
+  navigateList(event: Event) {
+    if (this.router.url === '/emotion-list') {
+      event.preventDefault();
+      this.router.navigate(['/home']);
+    }
+  }
+
+  navigateAccount(event: Event) {
+    if (this.router.url === '/my-account') {
+      event.preventDefault();
+      this.router.navigate(['/home']);
+    }
+  }
+
   get isHiddenAuthPage(): boolean {
     const hiddenRoutes = ['/', '/login', '/signup', '/forgot-password'];
     // Check if the route is strictly one of the hidden routes, or starts with reset-password/verify-email

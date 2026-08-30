@@ -1,5 +1,5 @@
 <div class="global-spheres-container" [class.spheres-disabled]="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute">
-  <app-emotion-spheres [showText]="showText" [viewMode]="viewMode" [currentTheme]="currentTheme" (emotionSelected)="onEmotionSelected($event)"></app-emotion-spheres>
+  <app-emotion-spheres [showText]="showText && !isListRoute && !isAccountRoute && !isFormVisible" [viewMode]="viewMode" [currentTheme]="currentTheme" (emotionSelected)="onEmotionSelected($event)"></app-emotion-spheres>
   
   <div class="canvas-dimmer" *ngIf="isListRoute || isAccountRoute || isAuthRoute || isWelcomeRoute" (click)="dismissOverlay()"></div>
 

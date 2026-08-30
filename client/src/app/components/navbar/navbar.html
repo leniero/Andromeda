@@ -6,7 +6,7 @@
         <a routerLink="/login" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="auth-link">Login</a>
       </ng-container>
       <ng-container *ngIf="authService.isLoggedIn$ | async">
-        <a class="icon-link" routerLink="/emotion-list" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Entries">
+        <a class="icon-link" routerLink="/emotion-list" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="navigateList($event)" title="Entries">
           <div class="icon-list-bullet"></div>
         </a>
       </ng-container>
@@ -21,7 +21,7 @@
         <a routerLink="/signup" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="auth-link">Sign Up</a>
       </ng-container>
       <ng-container *ngIf="authService.isLoggedIn$ | async">
-        <a class="icon-link" routerLink="/my-account" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" title="Account">
+        <a class="icon-link" routerLink="/my-account" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="navigateAccount($event)" title="Account">
           <div class="icon-person-circle"></div>
         </a>
       </ng-container>

@@ -335,7 +335,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     // Listen for pointer interactions
     this.fgCanvasRef.nativeElement.addEventListener('pointerdown', this.onPointerDown);
     this.fgCanvasRef.nativeElement.addEventListener('pointerup', this.onPointerUp);
-    this.fgCanvasRef.nativeElement.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('mousemove', this.onPointerMove);
     this.fgCanvasRef.nativeElement.addEventListener('pointerleave', this.onPointerLeave);
 
     // Listen for theme changes from system preference, although now overridden by Input
@@ -487,35 +487,37 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.pointerDownClientY = event.clientY;
   }
 
-  private onPointerMove = (event: PointerEvent) => {
+  private onPointerMove = (event: PointerEvent | MouseEvent) => {
     if (this.selectedEmotion) {
       if (this.hoveredEmotionId) {
         this.hoveredEmotionId = null;
-        document.body.style.cursor = 'default';
+        this.fgCanvasRef.nativeElement.style.cursor = 'default';
       }
       return;
     }
 
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const rect = this.fgCanvasRef.nativeElement.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObjects(this.spheres, false);
 
     if (intersects.length > 0) {
       const sphere = intersects[0].object as THREE.Mesh;
-      if (!sphere.userData['isSpawning']) {
-        this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
-        document.body.style.cursor = 'pointer';
-      }
+      this.hoveredEmotionId = sphere.userData['emotion']?._id || null;
+      this.fgCanvasRef.nativeElement.style.cursor = 'pointer';
+      document.body.style.cursor = 'pointer';
     } else if (this.hoveredEmotionId) {
       this.hoveredEmotionId = null;
+      this.fgCanvasRef.nativeElement.style.cursor = 'default';
       document.body.style.cursor = 'default';
     }
   }
 
   private onPointerLeave = (event: PointerEvent) => {
     this.hoveredEmotionId = null;
+    this.fgCanvasRef.nativeElement.style.cursor = 'default';
     document.body.style.cursor = 'default';
   }
 
@@ -533,16 +535,27 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       const nestedVideoMesh = selectedSphere?.children.find(c => c.userData['isNestedVideo']);
 
       if (nestedVideoMesh) {
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const rect = this.fgCanvasRef.nativeElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.layers.enableAll();
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const intersects = this.raycaster.intersectObjects([nestedVideoMesh], false);
 
         if (intersects.length > 0 && !this.orbitControls.enabled) {
+          const nestedVideoMesh = selectedSphere?.children.find(c => c.userData['isNestedVideo']);
+          if (!nestedVideoMesh) return; // Prevent flying inside if the video is missing
+
+          const videoEl = nestedVideoMesh.userData['videoEl'] as HTMLVideoElement;
+          if (videoEl && videoEl.readyState === 0) {
+             // The video is either broken or still buffering. Try to kickstart it.
+             videoEl.play().catch(e => console.warn('Video failed to play:', e));
+             return; 
+          }
+
           // Fly inside the video sphere!
-          this.loadLocalVideo(this.selectedEmotion.emotion._id, selectedSphere!);
+          this.loadLocalVideo(this.selectedEmotion.emotion.clientId || this.selectedEmotion.emotion._id, selectedSphere!);
           this.isInVideo = true;
           this.isCameraAnimating = true;
           document.body.classList.add('video-immersive-mode');
@@ -565,6 +578,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           // Lock vertical rotation (pitch), only allow sideways (yaw) spinning!
           this.orbitControls.minPolarAngle = Math.PI / 2; 
           this.orbitControls.maxPolarAngle = Math.PI / 2;
+          this.orbitControls.rotateSpeed = -1.0; // Invert drag since we are inside the sphere
 
           if (this.videoElement) {
             this.videoElement.play().catch(e => console.error("Video play failed", e));
@@ -594,8 +608,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       return;
     }
 
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const rect = this.fgCanvasRef.nativeElement.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
     const intersects = this.raycaster.intersectObjects(this.spheres, false);
@@ -660,12 +675,22 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       selectedSphere.traverse((child) => {
         child.layers.set(1);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-          child.material.wireframe = false;
           if (child.userData['isNestedVideo']) {
+             child.material.wireframe = false;
              child.material.opacity = 0.8; // Make the inner orb visible when zoomed in
-          } else if (emotionData.hasLocalVideo) {
+          } else if (child.userData['isSolidChild']) {
+             child.material.wireframe = false;
              child.material.transparent = true;
-             child.material.opacity = 0.1; // Make the outer shell transparent
+             child.material.opacity = 1.0; 
+          } else if (emotionData.hasLocalVideo) {
+             child.material.wireframe = false;
+             child.material.transparent = true;
+             child.material.opacity = 0.35; // Make the outer shell a bit more visible
+          } else {
+             // Normal post (or fallback): ensure it's fully opaque and solid
+             child.material.wireframe = false;
+             child.material.transparent = false;
+             child.material.opacity = 1.0;
           }
         }
       });
@@ -730,15 +755,15 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     let rightOffsetAmount = 0;
     let upOffsetAmount = 0;
-    let zoomDistance = finalSize * 3.8;
+    let zoomDistance = finalSize * 5.0;
 
     if (isMobile) {
-      upOffsetAmount = -finalSize * 0.3;
-      zoomDistance = finalSize * 7.5;
+      upOffsetAmount = -finalSize * 1.2; // Move camera target down to center the text below the sphere
+      zoomDistance = finalSize * 7.5; // Zoom out to fit both
     } else {
-      rightOffsetAmount = finalSize * 1.25; // Shift camera more to the right, pushing sphere left
-      upOffsetAmount = 0; // Vertically center the view
-      zoomDistance = finalSize * 6.0; // Zoom out a bit more to avoid being too close
+      rightOffsetAmount = finalSize * 1.4; // Move camera target right to center the text next to the sphere
+      upOffsetAmount = -finalSize * 0.1; // Slight adjustment down just in case
+      zoomDistance = finalSize * 6.0;
     }
 
     this.targetOrbitCenter.copy(worldPos)
@@ -756,36 +781,35 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
   public closeDetail() {
     if (this.isClosing) return;
     this.isClosing = true;
-    this.cdr.detectChanges(); // Trigger animation
+    this.cdr.detectChanges();
     
-    // Wait for the animation to finish (0.3s) before actually closing
-    setTimeout(() => {
-      if (this.selectedEmotion) {
-        const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
-        if (selectedSphere) {
-          (selectedSphere.material as THREE.Material).visible = true;
-          this.textGroups.forEach(tg => {
-            if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = true;
-          });
-        }
+    if (this.selectedEmotion) {
+      const selectedSphere = this.spheres.find(s => s.userData['emotion']?._id === this.selectedEmotion.emotion._id);
+      if (selectedSphere) {
+        (selectedSphere.material as THREE.Material).visible = true;
+        this.textGroups.forEach(tg => {
+          if (tg.userData['emotionId'] === this.selectedEmotion.emotion._id) tg.visible = true;
+        });
       }
+    }
 
-      this.selectedEmotion = null;
-      this.isInVideo = false;
-      this.isClosing = false;
-      document.body.classList.remove('video-immersive-mode');
-      this.cdr.detectChanges();
-      this.emotionSelected.emit(false);
-      this.targetCameraPos.set(0, 0, 4000);
-      this.targetOrbitCenter.set(0, 0, 0);
-      this.isCameraAnimating = true;
-      this.orbitControls.enabled = true;
+    this.selectedEmotion = null;
+    this.isInVideo = false;
+    this.isClosing = false;
+    document.body.classList.remove('video-immersive-mode');
+    this.cdr.detectChanges();
+    this.emotionSelected.emit(false);
+    this.targetCameraPos.set(0, 0, 4000);
+    this.targetOrbitCenter.set(0, 0, 0);
+    this.isCameraAnimating = true;
+    this.orbitControls.enabled = true;
 
       // Restore normal orbit controls
       this.orbitControls.enableZoom = true;
       this.orbitControls.enablePan = true;
       this.orbitControls.minPolarAngle = 0;
       this.orbitControls.maxPolarAngle = Math.PI;
+      this.orbitControls.rotateSpeed = 1.0;
 
       // Clean up local video if active
       if (this.videoCylinder) {
@@ -843,7 +867,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     });
 
     this.cdr.detectChanges();
-    }, 300);
   }
 
   private calculateDensity(currentEmotion: EmotionData, emotionsData: EmotionData[], radiusThreshold: number): number {
@@ -1031,9 +1054,14 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const latitudeInRadians = THREE.MathUtils.degToRad(emotion.latitude);
     const longitudeInRadians = THREE.MathUtils.degToRad(emotion.longitude);
 
-    const x = radius * Math.cos(latitudeInRadians) * Math.sin(longitudeInRadians);
-    const y = radius * Math.sin(latitudeInRadians);
-    const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians);
+    // Add microscopic jitter to prevent perfect overlap n-body physics bugs
+    const jitterX = (Math.random() - 0.5) * 0.1;
+    const jitterY = (Math.random() - 0.5) * 0.1;
+    const jitterZ = (Math.random() - 0.5) * 0.1;
+
+    const x = radius * Math.cos(latitudeInRadians) * Math.sin(longitudeInRadians) + jitterX;
+    const y = radius * Math.sin(latitudeInRadians) + jitterY;
+    const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians) + jitterZ;
 
     sphere.position.set(x, y, z);
     if (emotion.hasLocalVideo) {
@@ -1067,18 +1095,20 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     this.spheres.push(sphere);
 
     if (emotion.hasLocalVideo) {
-      const geometry = new THREE.SphereGeometry(maxSize * 0.7, 32, 32);
+      const geometry = new THREE.SphereGeometry(maxSize, 32, 32);
       geometry.scale(-1, 1, 1); // Invert X-axis only so it's correct from the inside
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, side: THREE.DoubleSide, depthWrite: false });
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.20, side: THREE.DoubleSide, depthWrite: false });
       const videoMesh = new THREE.Mesh(geometry, material);
-      videoMesh.userData = { isNestedVideo: true, baseOpacity: 1.0, hoverOpacity: 1.0, targetScale: 1.0, hoverScale: 1.0, inverted: true };
-      videoMesh.visible = false; // Hide until video loads
+      videoMesh.userData = { isNestedVideo: true, baseOpacity: 0.20, hoverOpacity: 0.75, targetScale: 0.85, hoverScale: 1.0, inverted: true };
+      videoMesh.scale.setScalar(0.85); // Initial scale
+      videoMesh.visible = false; // Hide until we confirm video exists
       sphere.add(videoMesh);
 
       // Load video immediately so it's visible from the outside
       if (emotion._id) {
-         this.videoStorageService.getVideo(emotion._id).then(videoBlob => {
+         this.videoStorageService.getVideo(emotion.clientId || emotion._id).then(videoBlob => {
             if (videoBlob) {
+               videoMesh.visible = true; // Video found, show it
                const videoUrl = URL.createObjectURL(videoBlob);
                const videoEl = document.createElement('video');
                videoEl.src = videoUrl;
@@ -1092,11 +1122,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                // Safari requires the video to be in the DOM to autoplay!
                videoEl.style.display = 'none';
                document.body.appendChild(videoEl);
-               
-               // Only show the sphere when the video actually has a frame ready!
-               videoEl.onloadeddata = () => {
-                 videoMesh.visible = true;
-               };
 
                videoEl.play().catch(e => console.warn('Video autoplay failed:', e));
 
@@ -1112,6 +1137,15 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
                videoMesh.userData['videoEl'] = videoEl;
                videoMesh.userData['videoUrl'] = videoUrl;
                videoMesh.userData['videoTexture'] = texture;
+            } else {
+               // Video blob not found. Fallback to normal post.
+               sphere.remove(videoMesh);
+               videoMesh.geometry.dispose();
+               (videoMesh.material as THREE.Material).dispose();
+               
+               if (sphere.userData['emotion']) {
+                 sphere.userData['emotion'].hasLocalVideo = false;
+               }
             }
          });
       }
@@ -1402,8 +1436,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       for (let j = i + 1; j < this.spheres.length; j++) {
         const s2 = this.spheres[j];
 
-        // Removed: if (s1.userData['isSpawning'] || s2.userData['isSpawning']) continue;
-
         const isSelected2 = this.selectedEmotion && s2.userData['emotion']?._id === this.selectedEmotion.emotion._id;
         if (isSelected2) continue;
 
@@ -1422,8 +1454,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
         const size1 = s1.userData['currentSize'] || 500;
         const size2 = s2.userData['currentSize'] || 500;
-        // Collision threshold: sum of radii (scaled for text breathing room and zoom scaleFactor)
-        const minSpace = (size1 + size2) * 1.1 * scaleFactor;
+        // Collision threshold: sum of radii (scaled for text breathing room, but NOT zoom scaleFactor to prevent jumping)
+        const minSpace = (size1 + size2) * 1.1;
         const minSpaceSq = minSpace * minSpace;
 
         if (distSq > 0 && distSq < minSpaceSq) {
@@ -1432,8 +1464,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           const pushForce = ((minSpace - dist) / minSpace) * 3.0;
           const pushVec = new THREE.Vector3().subVectors(s1.position, s2.position).normalize().multiplyScalar(pushForce);
 
-          s1.userData['velocity'].add(pushVec);
-          s2.userData['velocity'].sub(pushVec);
+          // Spawning spheres push others away but are not pushed themselves
+          if (!s1.userData['isSpawning']) s1.userData['velocity'].add(pushVec);
+          if (!s2.userData['isSpawning']) s2.userData['velocity'].sub(pushVec);
         }
       }
     }
@@ -1472,11 +1505,13 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
             const targetOpacity = isHovered ? 1.0 : 0.05; // Fade completely into a solid sphere
             if (solidChild.userData['isSpawningPhase']) {
               mat.opacity -= 0.005; // Fade out slowly after spawn
-              if (mat.opacity <= targetOpacity) {
+              if (mat.opacity <= 0.05) {
                 solidChild.userData['isSpawningPhase'] = false;
               }
-            } else {
-              mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
+            }
+            if (!solidChild.userData['isSpawningPhase'] || isHovered) {
+              if (isHovered) solidChild.userData['isSpawningPhase'] = false;
+              mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.15);
             }
           }
         }
@@ -1531,12 +1566,31 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       // Handle nested video cylinder hover effect
       sphere.children.forEach(child => {
         if (child.userData['isNestedVideo']) {
-            const targetOpacity = isHovered ? child.userData['hoverOpacity'] : child.userData['baseOpacity'];
-            const targetScale = isHovered ? child.userData['hoverScale'] : 1.0;
-            
-            // @ts-ignore
-            child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.1);
-            child.scale.setScalar(THREE.MathUtils.lerp(child.scale.x, targetScale, 0.1));
+            if (isSelected) {
+               const targetScale = 1.0;
+               let targetOpacity = 0.8;
+               let isTransparent = true;
+               
+               if (this.isInVideo) {
+                   targetOpacity = 1.0;
+                   isTransparent = false;
+               }
+               
+               // @ts-ignore
+               child.material.transparent = isTransparent;
+               // @ts-ignore
+               child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.15);
+               child.scale.setScalar(THREE.MathUtils.lerp(child.scale.x, targetScale, 0.15));
+            } else {
+               const targetOpacity = isHovered ? child.userData['hoverOpacity'] : child.userData['baseOpacity'];
+               const targetScale = isHovered ? child.userData['hoverScale'] : (child.userData['targetScale'] || 0.85);
+               
+               // @ts-ignore
+               child.material.transparent = true;
+               // @ts-ignore
+               child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.15);
+               child.scale.setScalar(THREE.MathUtils.lerp(child.scale.x, targetScale, 0.15));
+            }
         }
       });
     });
@@ -1676,7 +1730,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       if (selectedSphere) {
         // Rotate the nested video mesh independently around Y
         if (this.videoCylinder) {
-          this.videoCylinder.rotation.y += 0.002; // Slow sideways rotation
+          this.videoCylinder.rotation.y -= 0.004; // Slow sideways rotation
         }
 
         const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight) < 1.2;
@@ -1722,12 +1776,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     // Render background layer (0)
     this.camera.layers.set(0);
-    this.bgRenderer.render(this.scene, this.camera);
+    this.bgRenderer?.render(this.scene, this.camera);
 
     // Render foreground layer (1) for selected sphere
     this.camera.layers.set(1);
-    this.fgRenderer.render(this.scene, this.camera);
-  }
+    this.fgRenderer?.render(this.scene, this.camera);
+  };
 
 
 
@@ -1738,9 +1792,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     if (this.bgRenderer) this.bgRenderer.dispose();
     if (this.fgRenderer) this.fgRenderer.dispose();
     if (this.mediaQueryList) {
-      this.mediaQueryList.removeEventListener('change', this.onThemeChange);
+      this.mediaQueryList?.removeEventListener('change', this.onThemeChange);
     }
-    if (this.fgCanvasRef) {
+    if (this.fgCanvasRef?.nativeElement) {
       this.fgCanvasRef.nativeElement.removeEventListener('pointerdown', this.onPointerDown);
       this.fgCanvasRef.nativeElement.removeEventListener('pointerup', this.onPointerUp);
       this.fgCanvasRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);

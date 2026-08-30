@@ -10,7 +10,7 @@ const auth = require('../middleware/auth'); // Middleware to check authenticatio
 // Submit an emotion (accessible to both logged-in and non-logged-in users)
 router.post('/submit', auth.optional, async (req, res) => {
   try {
-    const { emotion, text_input, latitude, longitude, isPublic, hasLocalVideo } = req.body;
+    const { emotion, text_input, latitude, longitude, isPublic, hasLocalVideo, clientId } = req.body;
 
     const isPublicPost = req.user ? (isPublic !== false) : true;
     const now = new Date();
@@ -32,7 +32,8 @@ router.post('/submit', auth.optional, async (req, res) => {
         latitude,
         longitude,
         local_time: now,
-        hasLocalVideo: !!hasLocalVideo
+        hasLocalVideo: !!hasLocalVideo,
+        clientId
       });
       await newEmotion.save();
     }
@@ -48,7 +49,8 @@ router.post('/submit', auth.optional, async (req, res) => {
         longitude,
         local_time: now,
         isPublic: isPublicPost,
-        hasLocalVideo: !!hasLocalVideo
+        hasLocalVideo: !!hasLocalVideo,
+        clientId
       });
       await userEmotion.save();
     }

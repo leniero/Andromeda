@@ -106,6 +106,7 @@ export class App implements OnInit {
     }
     
     this.isFormVisible = !this.isFormVisible;
+    
     if (this.isFormVisible && this.spheresComponent) {
       this.spheresComponent.closeDetail();
     }

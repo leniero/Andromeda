@@ -51,7 +51,7 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
   get selectedColor() { 
     if (!this.selectedEmotion) return '';
     const hex = this.emotionService.getEmotionColor(this.selectedEmotion);
-    return hex + 'b3'; // Append 70% opacity alpha channel
+    return hex + 'e6'; // Append 90% opacity alpha channel
   }
 
   successMessage = '';
@@ -219,15 +219,6 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  async flipCamera(event: Event) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
-    if (this.isCameraActive) {
-      await this.startCamera();
-    }
-  }
-
   startRecording(): Promise<Blob> {
     return new Promise((resolve, reject) => {
       if (!this.cameraStream) return reject("No camera stream");
@@ -268,7 +259,8 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
     const formData: EmotionData = {
       ...this.emotionForm.value,
       text_input: this.emotionForm.value.reason,
-      hasLocalVideo: !!videoBlob
+      hasLocalVideo: !!videoBlob,
+      clientId: Math.random().toString(36).substr(2, 9)
     };
       
       // Freeze the form's dimensions so CSS can smoothly animate them down
@@ -288,43 +280,49 @@ export class EmotionFormComponent implements OnInit, OnDestroy {
           };
 
           // Save video to IndexedDB if we have one, using the new emotion ID
-          if (videoBlob && spawnedEmotion._id) {
-            this.videoStorageService.saveVideo(spawnedEmotion._id, videoBlob);
-          }
-          
-          this.isSubmitting = false;
-          this.stopCamera(); // Turn off camera after success
-          this.successMessage = 'Logged Successfully!';
-          
-          // Force angular to apply the 'morphing' class IMMEDIATELY
-          this.morphState = 'morphing';
-          if (this.cdr) this.cdr.detectChanges();
-          
-          // 1. Wait 600ms for the CSS transition to circle to complete
-          setTimeout(() => {
-            // 2. Hold the perfect circle shape for 1 second
+          const finalizeSubmission = () => {
+            this.isSubmitting = false;
+            this.stopCamera(); // Turn off camera after success
+            this.successMessage = 'Logged Successfully!';
+            
+            // Force angular to apply the 'morphing' class IMMEDIATELY
+            this.morphState = 'morphing';
+            if (this.cdr) this.cdr.detectChanges();
+            
+            // 1. Wait 600ms for the CSS transition to circle to complete
             setTimeout(() => {
-              this.morphState = 'floating';
-              this.emotionLogStarted.emit();
-              
-              // Spawn the 3D sphere IMMEDIATELY as the DOM element starts to fade out
-              this.emotionLogged.emit(spawnedEmotion);
-              
-              if (this.cdr) this.cdr.detectChanges();
-               
-              // 3. Wait 600ms for it to fade out before resetting
+              // 2. Hold the perfect circle shape for 1 second
               setTimeout(() => {
-                this.emotionForm.reset();
-                this.morphState = 'idle';
-                this.successMessage = '';
-                if (this.formElement) {
-                  this.formElement.nativeElement.style.removeProperty('--start-width');
-                  this.formElement.nativeElement.style.removeProperty('--start-height');
-                }
+                this.morphState = 'floating';
+                this.emotionLogStarted.emit();
+                
+                // Spawn the 3D sphere IMMEDIATELY as the DOM element starts to fade out
+                this.emotionLogged.emit(spawnedEmotion);
+                
                 if (this.cdr) this.cdr.detectChanges();
-              }, 600);
-            }, 1000);
-          }, 600);
+                 
+                // 3. Wait 600ms for it to fade out before resetting
+                setTimeout(() => {
+                  this.emotionForm.reset();
+                  this.morphState = 'idle';
+                  this.successMessage = '';
+                  if (this.formElement) {
+                    this.formElement.nativeElement.style.removeProperty('--start-width');
+                    this.formElement.nativeElement.style.removeProperty('--start-height');
+                  }
+                  if (this.cdr) this.cdr.detectChanges();
+                }, 600);
+              }, 1000);
+            }, 600);
+          };
+
+          if (videoBlob && spawnedEmotion.clientId) {
+            this.videoStorageService.saveVideo(spawnedEmotion.clientId, videoBlob).then(() => {
+              finalizeSubmission();
+            });
+          } else {
+            finalizeSubmission();
+          }
         },
         error: (err) => {
           console.error('Submission failed', err);
