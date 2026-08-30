@@ -812,8 +812,6 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
         child.layers.set(0);
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
           if (child.userData['isNestedVideo']) {
-            // Counteract the parent sphere's random rotation so the video is perfectly upright in world space!
-            child.quaternion.copy(sphere.quaternion).invert();
             child.material.wireframe = false;
             child.material.opacity = child.userData['baseOpacity'] || 0.35;
           } else if (child.userData['isSolidChild']) {
@@ -1032,7 +1030,12 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
     const z = radius * Math.cos(latitudeInRadians) * Math.cos(longitudeInRadians);
 
     sphere.position.set(x, y, z);
-    sphere.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+    if (emotion.hasLocalVideo) {
+      // Video spheres must remain upright and only spin sideways (Y axis)
+      sphere.rotation.set(0, Math.random() * Math.PI * 2, 0);
+    } else {
+      sphere.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+    }
 
     sphere.userData = {
       shaderUniforms: uniforms,
