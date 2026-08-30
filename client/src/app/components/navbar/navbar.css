@@ -127,9 +127,9 @@
     padding-top: 1.5rem;
   }
   .navbar-semicircle {
-    height: 64px;
+    height: 76px;
     padding: 0 2.5rem;
-    gap: 2rem;
+    gap: 2.5rem;
   }
 }
 

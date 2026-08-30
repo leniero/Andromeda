@@ -12,9 +12,9 @@
 
 @media (max-width: 768px) {
   .visualization-wrapper {
-    top: env(safe-area-inset-top, 0px);
-    bottom: env(safe-area-inset-bottom, 0px);
-    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    top: 0;
+    bottom: 0;
+    height: 100dvh;
     border-radius: 40px;
     overflow: hidden;
   }

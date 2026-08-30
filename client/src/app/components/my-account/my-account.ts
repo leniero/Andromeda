@@ -26,6 +26,12 @@ export class MyAccountComponent implements OnInit {
     return this.emotionService.getEmotionColor(emotion);
   }
 
+  onBackgroundClick(event: MouseEvent) {
+    if (event.target === event.currentTarget) {
+      this.router.navigate(['/home']);
+    }
+  }
+
   emotionEmojis: { [key: string]: string } = {
     Anger: '😡', Contempt: '😒', Disgust: '🤢', Envy: '😐',
     Guilt: '😣', Shame: '😳', Fear: '😨', Sadness: '😢',

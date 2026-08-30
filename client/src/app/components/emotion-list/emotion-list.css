@@ -142,8 +142,10 @@
 
 .delete-confirm {
   margin-top: 6px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
   border-radius: 14px;
   padding: 10px;
   text-align: center;
@@ -152,7 +154,7 @@
 }
 
 .delete-warning-text {
-  color: #ff6b6b;
+  color: var(--text-primary);
   margin-top: 0;
   margin-bottom: 10px;
   font-weight: bold;
@@ -298,15 +300,6 @@
 :host-context([data-theme='light']) .orbit-text {
   fill: #000000 !important;
   opacity: 1 !important;
-}
-
-:host-context([data-theme='light']) .delete-confirm {
-  background: rgba(239, 68, 68, 0.25);
-  border: 1px solid rgba(239, 68, 68, 0.6);
-}
-
-:host-context([data-theme='light']) .delete-warning-text {
-  color: #dc2626;
 }
 
 .state-container {

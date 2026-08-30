@@ -28,6 +28,6 @@ export class NavbarComponent {
   }
 
   get isHomeRoute(): boolean {
-    return this.router.url === '/home';
+    return this.router.url === '/home' || this.router.url === '/';
   }
 }
