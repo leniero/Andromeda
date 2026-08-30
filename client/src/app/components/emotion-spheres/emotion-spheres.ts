@@ -544,6 +544,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           this.loadLocalVideo(this.selectedEmotion.emotion._id, selectedSphere!);
           this.isInVideo = true;
           this.isCameraAnimating = true;
+          document.body.classList.add('video-immersive-mode');
+          this.cdr.detectChanges();
 
           const worldPos = new THREE.Vector3();
           selectedSphere!.getWorldPosition(worldPos);
@@ -761,6 +763,8 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     this.selectedEmotion = null;
     this.isInVideo = false;
+    document.body.classList.remove('video-immersive-mode');
+    this.cdr.detectChanges();
     this.emotionSelected.emit(false);
     this.targetCameraPos.set(0, 0, 4000);
     this.targetOrbitCenter.set(0, 0, 0);
@@ -1716,6 +1720,9 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
       this.containerRef.nativeElement.removeEventListener('pointermove', this.onPointerMove);
       this.containerRef.nativeElement.removeEventListener('pointerleave', this.onPointerLeave);
     }
+    
+    document.body.classList.remove('video-immersive-mode');
+    
     if (this.deleteSub) {
       this.deleteSub.unsubscribe();
     }
