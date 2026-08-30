@@ -550,15 +550,17 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
           const worldPos = new THREE.Vector3();
           selectedSphere!.getWorldPosition(worldPos);
 
-          this.targetCameraPos.copy(worldPos);
+          // Set target EXACTLY at the sphere center so OrbitControls doesn't translate the camera
+          this.targetOrbitCenter.copy(worldPos);
 
-          // Keep orbit controls target slightly ahead so we can look around from the center
-          this.targetOrbitCenter.copy(worldPos).sub(this.zoomDirection.clone().multiplyScalar(10));
+          // Place camera a microscopic distance away so it stays essentially at the center, looking out
+          this.targetCameraPos.copy(worldPos).add(this.zoomDirection.clone().multiplyScalar(0.01));
 
           this.orbitControls.enabled = true; // Enable touch/mouse scrubbing
 
           // Restrict controls for optimal video framing
           this.orbitControls.enableZoom = false;
+          this.orbitControls.enablePan = false;
           // Lock vertical rotation (pitch), only allow sideways (yaw) spinning!
           this.orbitControls.minPolarAngle = Math.PI / 2; 
           this.orbitControls.maxPolarAngle = Math.PI / 2;
@@ -773,6 +775,7 @@ export class EmotionSpheresComponent implements AfterViewInit, OnDestroy, OnChan
 
     // Restore normal orbit controls
     this.orbitControls.enableZoom = true;
+    this.orbitControls.enablePan = true;
     this.orbitControls.minPolarAngle = 0;
     this.orbitControls.maxPolarAngle = Math.PI;
 
